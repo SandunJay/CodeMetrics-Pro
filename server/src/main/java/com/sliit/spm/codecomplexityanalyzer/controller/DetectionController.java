@@ -3,7 +3,7 @@ package com.sliit.spm.codecomplexityanalyzer.controller;
 import com.sliit.spm.codecomplexityanalyzer.model.Project;
 import com.sliit.spm.codecomplexityanalyzer.model.ProjectInfo;
 import com.sliit.spm.codecomplexityanalyzer.service.serviceimpl.DetectionService;
-import com.sliit.spm.codecomplexityanalyzer.service.serviceimpl.FileHandlerService;
+//import com.sliit.spm.codecomplexityanalyzer.service.serviceimpl.FileHandlerService;
 import com.sliit.spm.codecomplexityanalyzer.utils.ErrorMessages;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,10 +18,12 @@ import java.util.NoSuchElementException;
 @RequestMapping("")
 public class DetectionController {
     private final DetectionService detectionService;
-    private final FileHandlerService fileHandlerService;
-    public DetectionController(DetectionService detectionService, FileHandlerService fileHandlerService) {
+//    private final FileHandlerService fileHandlerService;
+    public DetectionController(DetectionService detectionService
+//            , FileHandlerService fileHandlerService
+    ) {
         this.detectionService = detectionService;
-        this.fileHandlerService = fileHandlerService;
+//        this.fileHandlerService = fileHandlerService;
     }
 
     @GetMapping("/analyze")
@@ -42,6 +44,6 @@ public class DetectionController {
         } else {
             throw new NoSuchElementException(ErrorMessages.SP_NOT_FOUND_ERR);
         }
-        fileHandlerService.readFiles(project);
+//        fileHandlerService.readFiles(project);
     }
 }
