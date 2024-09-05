@@ -1,12 +1,13 @@
 "use client"
-import LoginPage from './pages/common/LoginForm'
+// import LoginPage from './pages/common/LoginForm'
+import RegisterPage from './pages/common/RegisterForm'
 
 function App() {
 
   return (
     <>
       <div>
-        <LoginPage/>
+        <RegisterPage/>
       </div>
       {/* <h1>Vite + React</h1>
       <div className="card">
