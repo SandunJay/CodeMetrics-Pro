@@ -35,6 +35,7 @@ public class DetectionController {
         return ResponseEntity.ok(projectInfoList);
     }
 
+//    To detect a code in Local storage and read its directories and subdirectories
     @GetMapping("/analyze-base")
     public void analyzeBaseProject(@RequestParam String path){
         Project project = new Project();
@@ -46,4 +47,9 @@ public class DetectionController {
         }
 //        fileHandlerService.readFiles(project);
     }
+
+//    To get the code from an image in local storage
+
+
+
 }
