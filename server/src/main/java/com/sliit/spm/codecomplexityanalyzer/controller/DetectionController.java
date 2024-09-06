@@ -1,8 +1,8 @@
 package com.sliit.spm.codecomplexityanalyzer.controller;
 
 import com.sliit.spm.codecomplexityanalyzer.model.Project;
-import com.sliit.spm.codecomplexityanalyzer.service.serviceimpl.DetectionService;
 //import com.sliit.spm.codecomplexityanalyzer.service.serviceimpl.FileHandlerService;
+import com.sliit.spm.codecomplexityanalyzer.service.serviceimpl.FileHandler;
 import com.sliit.spm.codecomplexityanalyzer.service.serviceimpl.ImageScanner;
 import com.sliit.spm.codecomplexityanalyzer.utils.ErrorMessages;
 import com.sliit.spm.codecomplexityanalyzer.utils.LanguageDetector;
@@ -24,26 +24,29 @@ public class DetectionController {
     @Autowired
     private LanguageDetector languageDetector;
     private final ImageScanner imageScanner;
-//    private final FileHandlerService fileHandlerService;
-    public DetectionController(ImageScanner imageScanner
-//            , FileHandlerService fileHandlerService
+    private final FileHandler fileHandlerService;
+    public DetectionController(ImageScanner imageScanner, FileHandler fileHandlerService
     ) {
-//        this.fileHandlerService = fileHandlerService;
+        this.fileHandlerService = fileHandlerService;
         this.imageScanner = imageScanner;
     }
 
+//    @GetMapping("/analyze")
+//    public ResponseEntity<List<Project>> analyzeProjects(@RequestParam String folderPath) {
+//        List<Project> projectInfoList = languageDetector.analyzeProjects(folderPath);
+//        if (projectInfoList.isEmpty()) {
+//            return ResponseEntity.noContent().build();
+//        }
+//        return ResponseEntity.ok(projectInfoList);
+//    }
+
+//    To detect a code in Local storage and read its directories and subdirectories
     @GetMapping("/analyze")
-    public ResponseEntity<List<Project>> analyzeProjects(@RequestParam String folderPath) {
-        List<Project> projectInfoList = languageDetector.analyzeProjects(folderPath);
+    public ResponseEntity<List<Project>> analyzeBaseProject(@RequestParam String path){
+        List<Project> projectInfoList = languageDetector.analyzeProjects(path);
         if (projectInfoList.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
-        return ResponseEntity.ok(projectInfoList);
-    }
-
-//    To detect a code in Local storage and read its directories and subdirectories
-    @GetMapping("/analyze-base")
-    public void analyzeBaseProject(@RequestParam String path){
         Project project = new Project();
         project.setProjectKey("ACC");
         if (!path.isEmpty()) {
@@ -51,7 +54,8 @@ public class DetectionController {
         } else {
             throw new NoSuchElementException(ErrorMessages.SP_NOT_FOUND_ERR);
         }
-//        fileHandlerService.readFiles(project);
+        fileHandlerService.readFiles(project);
+        return null;
     }
 
 //    To get the code from an image in local storage

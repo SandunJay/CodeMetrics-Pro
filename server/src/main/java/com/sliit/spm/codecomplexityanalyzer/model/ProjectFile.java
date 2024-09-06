@@ -1,36 +1,19 @@
 package com.sliit.spm.codecomplexityanalyzer.model;
 
+import lombok.*;
+
 import java.util.List;
 
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 public class ProjectFile {
 
     private String relativePath;
     private List<Line> linesData;
     private int cp;
-
-    public void setRelativePath(String relativePath) {
-        this.relativePath = relativePath;
-    }
-
-    public String getRelativePath() {
-        return relativePath;
-    }
-
-    public List<Line> getLinesData() {
-        return linesData;
-    }
-
-    public void setLinesData(List<Line> linesData) {
-        this.linesData = linesData;
-    }
-
-    public int getCp() {
-        return cp;
-    }
-
-    public void setCp(int cp) {
-        this.cp = cp;
-    }
 
     @Override
     public String toString() {
