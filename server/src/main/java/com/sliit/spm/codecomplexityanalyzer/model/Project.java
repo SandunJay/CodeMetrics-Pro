@@ -1,14 +1,22 @@
 package com.sliit.spm.codecomplexityanalyzer.model;
 
+import lombok.*;
+
 import java.util.List;
 
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 public class Project {
 
-    String projectKey;
-    String sourcePath;
-    String language;
-    List<ProjectFile> files;
-    int cp;
+    private String name;
+    private String projectKey;
+    private String sourcePath;
+    private String language;
+    private List<ProjectFile> files;
+    private int cp;
 
     public List<ProjectFile> getFiles() {
         return files;

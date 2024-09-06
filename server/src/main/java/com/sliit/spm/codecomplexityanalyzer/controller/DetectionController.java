@@ -1,12 +1,12 @@
 package com.sliit.spm.codecomplexityanalyzer.controller;
 
 import com.sliit.spm.codecomplexityanalyzer.model.Project;
-import com.sliit.spm.codecomplexityanalyzer.model.ProjectInfo;
 import com.sliit.spm.codecomplexityanalyzer.service.serviceimpl.DetectionService;
 //import com.sliit.spm.codecomplexityanalyzer.service.serviceimpl.FileHandlerService;
 import com.sliit.spm.codecomplexityanalyzer.service.serviceimpl.ImageScanner;
 import com.sliit.spm.codecomplexityanalyzer.utils.ErrorMessages;
-import net.sourceforge.tess4j.TesseractException;
+import com.sliit.spm.codecomplexityanalyzer.utils.LanguageDetector;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,20 +21,20 @@ import java.util.NoSuchElementException;
 @RestController
 @RequestMapping("/api/v1/detect")
 public class DetectionController {
-    private final DetectionService detectionService;
+    @Autowired
+    private LanguageDetector languageDetector;
     private final ImageScanner imageScanner;
 //    private final FileHandlerService fileHandlerService;
-    public DetectionController(DetectionService detectionService, ImageScanner imageScanner
+    public DetectionController(ImageScanner imageScanner
 //            , FileHandlerService fileHandlerService
     ) {
-        this.detectionService = detectionService;
 //        this.fileHandlerService = fileHandlerService;
         this.imageScanner = imageScanner;
     }
 
     @GetMapping("/analyze")
-    public ResponseEntity<List<ProjectInfo>> analyzeProjects(@RequestParam String folderPath) {
-        List<ProjectInfo> projectInfoList = detectionService.analyzeProjects(folderPath);
+    public ResponseEntity<List<Project>> analyzeProjects(@RequestParam String folderPath) {
+        List<Project> projectInfoList = languageDetector.analyzeProjects(folderPath);
         if (projectInfoList.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
@@ -57,9 +57,14 @@ public class DetectionController {
 //    To get the code from an image in local storage
     @GetMapping("/extract")
     public ResponseEntity<String> extractText(@RequestParam String filePath) {
+        Project project = new Project();
+        if (filePath.isEmpty()){
+            throw new  NullPointerException("File Path cannot be null");
+        }
         try {
             String decodedPath = URLDecoder.decode(filePath, "UTF-8");
-            String text = imageScanner.readImage(filePath);
+            project.setSourcePath(decodedPath);
+            String text = imageScanner.readImage(project);
             return ResponseEntity.ok(text);
         } catch (UnsupportedEncodingException e) {
             return ResponseEntity.status(500).body("Error decoding file path: " + e.getMessage());

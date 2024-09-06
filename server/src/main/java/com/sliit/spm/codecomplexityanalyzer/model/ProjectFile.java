@@ -4,9 +4,9 @@ import java.util.List;
 
 public class ProjectFile {
 
-    String relativePath;
-    List<Line> linesData;
-    int cp;
+    private String relativePath;
+    private List<Line> linesData;
+    private int cp;
 
     public void setRelativePath(String relativePath) {
         this.relativePath = relativePath;
