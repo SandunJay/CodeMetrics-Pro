@@ -59,7 +59,7 @@ public class DetectionController {
     public ResponseEntity<String> extractText(@RequestParam String filePath) {
         try {
             String decodedPath = URLDecoder.decode(filePath, "UTF-8");
-            String text = imageScanner.readImage(decodedPath);
+            String text = imageScanner.readImage(filePath);
             return ResponseEntity.ok(text);
         } catch (UnsupportedEncodingException e) {
             return ResponseEntity.status(500).body("Error decoding file path: " + e.getMessage());

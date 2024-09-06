@@ -11,6 +11,8 @@ import java.io.File;
 public class ImageScanner {
     public String readImage(String path) {
         ITesseract image  = new Tesseract();
+        image.setDatapath("C:\\Program Files\\Tesseract-OCR\\tessdata");
+        image.setLanguage("eng");
         String data = "";
         try {
             data = image.doOCR(new File(path));

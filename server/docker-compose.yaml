@@ -1,32 +1,32 @@
-version: '3.8'  # Specify Docker Compose version
-
-services:
-  app:
-    build:
-      context: .  # The directory where the Dockerfile is located
-      dockerfile: Dockerfile  # Dockerfile name, if it's different
-    ports:
-      - "8080:8080"  # Map container port to host port
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3307/code
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
-    depends_on:
-      - db
-    networks:
-      - app-network
-
-  db:
-    image: mysql:8  # Use the MySQL 8 image
-    container_name: code-mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: code
-    ports:
-      - "3307:3306"  # Expose MySQL port
-    networks:
-      - app-network
-
-networks:
-  app-network:
-    driver: bridge
+#version: '3.8'  # Specify Docker Compose version
+#
+#services:
+#  app:
+#    build:
+#      context: .  # The directory where the Dockerfile is located
+#      dockerfile: Dockerfile  # Dockerfile name, if it's different
+#    ports:
+#      - "8080:8080"  # Map container port to host port
+#    environment:
+#      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3307/code
+#      - SPRING_DATASOURCE_USERNAME=root
+#      - SPRING_DATASOURCE_PASSWORD=root
+#    depends_on:
+#      - db
+#    networks:
+#      - app-network
+#
+#  db:
+#    image: mysql:8  # Use the MySQL 8 image
+#    container_name: code-mysql
+#    environment:
+#      MYSQL_ROOT_PASSWORD: root
+#      MYSQL_DATABASE: code
+#    ports:
+#      - "3307:3306"  # Expose MySQL port
+#    networks:
+#      - app-network
+#
+#networks:
+#  app-network:
+#    driver: bridge
