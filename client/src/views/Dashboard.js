@@ -76,7 +76,7 @@ const [chartData,setChartData]=useState();
   useEffect(() => {
     async function fetchData() {
       try {
-        const response = await fetch('http://localhost:8090/projects');
+        const response = await fetch('http://localhost:8080/projects');
         const data = await response.json();
 
         console.log(data[0]?.files[0]); // Log the first file for debugging

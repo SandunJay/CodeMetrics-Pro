@@ -24,7 +24,7 @@ public class FileHandler {
 
     public static Stack stack;
     private Project project;
-    private String projectRoot = "/Users/udeesharukshan/Documents/Algorithm-Complexity-Calculator/gg/code";
+    private String projectRoot = "/Users/udeesharukshan/ccproject/newccCal/Algorithm-Complexity-Calculator/ACCScanner/TestData";
     private List<File> fileList = new ArrayList<>();
     private List<ProjectFile> projectFiles = new ArrayList<>();
 
