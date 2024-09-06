@@ -11,6 +11,8 @@ public class Line {
     int cps;
     int tw;
     int cr;
+    int singleLineCommentsCount; // Count of single-line comments
+    int multiLineCommentsCount;  // Count of multi-line comments
 
     public String getData() {
         return data;
@@ -26,6 +28,21 @@ public class Line {
 
     public void setLineNo(int lineNo) {
         this.lineNo = lineNo;
+    }
+    public int getSingleLineCommentsCount() {
+        return singleLineCommentsCount;
+    }
+
+    public void setSingleLineCommentsCount(int singleLineCommentsCount) {
+        this.singleLineCommentsCount = singleLineCommentsCount;
+    }
+
+    public int getMultiLineCommentsCount() {
+        return multiLineCommentsCount;
+    }
+
+    public void setMultiLineCommentsCount(int multiLineCommentsCount) {
+        this.multiLineCommentsCount = multiLineCommentsCount;
     }
 
     public int getCs() {
@@ -83,11 +100,15 @@ public class Line {
     public void setCr(int cr) {
         this.cr = cr;
     }
-
+    public boolean isComment() {
+        return data.trim().startsWith("//");
+    }
     @Override
     public String toString() {
         return "Line{" +
                 "lineNo=" + lineNo +
+                ", singleLineCommentsCount=" + singleLineCommentsCount +
+                ", multiLineCommentsCount=" + multiLineCommentsCount +
                 ", cs=" + cs +
                 ", ctc=" + ctc +
                 ", cnc=" + cnc +
