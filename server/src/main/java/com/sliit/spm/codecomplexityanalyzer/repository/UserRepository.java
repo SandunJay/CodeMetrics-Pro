@@ -1,7 +1,12 @@
 package com.sliit.spm.codecomplexityanalyzer.repository;
 
 import com.sliit.spm.codecomplexityanalyzer.model.User;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
-public interface UserRepository extends JpaRepository<User, Long> {
+import java.util.Optional;
+
+public interface UserRepository extends MongoRepository<User, Long> {
+    Optional<User> findByEmail(String email);
+
+    boolean existsByEmail(String email);
 }
