@@ -10,10 +10,7 @@ import com.sliit.spm.codecomplexityanalyzer.model.Analysis;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * @author it16166752
- *
- */
+
 public interface ProjectService {
 	public Project save(Project project);
 
