@@ -17,11 +17,11 @@ public class AuthController {
         return ResponseEntity.ok("User registered successfully");
     }
 
-//    @PostMapping("/login")
-//    public ResponseEntity<String> login(@RequestBody LoginDto loginDto) {
-//        String token = userService.login(loginDto.getEmail(), loginDto.getPassword());
-//        return ResponseEntity.ok(token);
-//    }
+    @PostMapping("/login")
+    public ResponseEntity<String> login(@RequestBody String email, @RequestBody String password) {
+        String token = userService.login(email, password);
+        return ResponseEntity.ok(token);
+    }
 
     @PostMapping("/forgot-password")
     public ResponseEntity<String> forgotPassword(@RequestParam String email) {

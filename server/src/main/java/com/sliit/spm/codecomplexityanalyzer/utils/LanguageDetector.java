@@ -18,11 +18,9 @@ public class LanguageDetector {
 
     private static final double SIGNIFICANCE_THRESHOLD = 0.2;
 
-    // Set to store unique keywords across all languages
     private static final Set<String> ALL_KEYWORDS = new HashSet<>();
 
     public LanguageDetector() {
-        // Populate ALL_KEYWORDS with keywords from all languages
         ALL_KEYWORDS.addAll(JAVA_KEYWORDS);
         ALL_KEYWORDS.addAll(PYTHON_KEYWORDS);
         ALL_KEYWORDS.addAll(CPP_KEYWORDS);
@@ -32,7 +30,6 @@ public class LanguageDetector {
         ALL_KEYWORDS.addAll(KOTLIN_KEYWORDS);
     }
 
-    // Detects the programming language based on the OCR-processed code
     public String detectLanguage(String code) {
         code = code.toLowerCase();
 
@@ -44,7 +41,6 @@ public class LanguageDetector {
         double goScore = calculateUniqueKeywordMatch(code, GO_KEYWORDS);
         double kotlinScore = calculateUniqueKeywordMatch(code, KOTLIN_KEYWORDS);
 
-        // Determine the language with the highest score
         if (javaScore >= SIGNIFICANCE_THRESHOLD) {
             return "Java";
         } else if (pythonScore >= SIGNIFICANCE_THRESHOLD) {
@@ -64,12 +60,10 @@ public class LanguageDetector {
         }
     }
 
-    // Calculates the percentage of unique keyword matches for the given language
     private double calculateUniqueKeywordMatch(String code, List<String> languageKeywords) {
         int matchCount = 0;
         int totalUniqueKeywords = 0;
 
-        // Check each keyword and only consider it if it is unique to the language
         for (String keyword : languageKeywords) {
             if (isUniqueKeyword(keyword, languageKeywords)) {
                 totalUniqueKeywords++;
@@ -82,16 +76,13 @@ public class LanguageDetector {
         return totalUniqueKeywords == 0 ? 0 : (double) matchCount / totalUniqueKeywords;
     }
 
-    // Checks if a keyword is unique to a given language
     private boolean isUniqueKeyword(String keyword, List<String> languageKeywords) {
-        // A keyword is unique if it appears only in the given language's keyword list
         int countInAllLanguages = 0;
         for (String otherKeyword : ALL_KEYWORDS) {
             if (otherKeyword.equalsIgnoreCase(keyword)) {
                 countInAllLanguages++;
             }
         }
-        // If the keyword appears more than once across all languages, it's not unique
         return countInAllLanguages == 1;
     }
 

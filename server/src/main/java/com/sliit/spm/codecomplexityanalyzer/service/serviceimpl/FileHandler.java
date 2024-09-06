@@ -9,6 +9,7 @@ import com.sliit.spm.codecomplexityanalyzer.utils.MethodAndVariableFinder;
 import com.sliit.spm.codecomplexityanalyzer.utils.RecursiveMethodLineNumberFinder;
 import org.apache.commons.io.FilenameUtils;
 import com.sliit.spm.codecomplexityanalyzer.service.analyzer.*;
+import org.springframework.stereotype.Service;
 
 
 import java.io.File;
@@ -20,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
+@Service
 public class FileHandler {
 
 

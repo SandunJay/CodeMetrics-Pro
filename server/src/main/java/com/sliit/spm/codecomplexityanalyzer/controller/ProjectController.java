@@ -2,22 +2,19 @@
  * 
  */
 package com.sliit.spm.codecomplexityanalyzer.controller;
-import com.sliit.spm.codecomplexityanalyzer.service.serviceimpl.ProjectService;
 
+import com.sliit.spm.codecomplexityanalyzer.service.serviceimpl.ProjectServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.sliit.spm.codecomplexityanalyzer.model.Project; 
-/**
- * @author it16166752
- *
- */
+
 @CrossOrigin(origins = "*")
 @RestController
 public class ProjectController {
 	@Autowired
-	ProjectService projectService;
+	private ProjectServiceImpl projectService;
 
 	@PostMapping("/projects")
 	public ResponseEntity<?> saveProject(@RequestBody Project project) {

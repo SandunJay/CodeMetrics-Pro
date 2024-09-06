@@ -15,12 +15,8 @@ import java.time.LocalDateTime;
 public class Token {
     @Id
     private Long id;
-
     private User user;
-
     private String token;
-
     private LocalDateTime expiryDate;
-
     private boolean isValid;
 }
