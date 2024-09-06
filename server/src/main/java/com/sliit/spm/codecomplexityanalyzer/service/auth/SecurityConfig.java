@@ -21,6 +21,8 @@ public class SecurityConfig {
                 .csrf().disable()
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/auth/**").permitAll() // Public routes
+                        .requestMatchers("/api/v1/detect/analyze").permitAll() // Ensure this endpoint is also public if needed
+                        .requestMatchers("/api/v1/detect/extract").permitAll() // Allow access to extract endpoint
                         .anyRequest().authenticated() // Securing other routes
                 )
                 .sessionManagement(session ->
