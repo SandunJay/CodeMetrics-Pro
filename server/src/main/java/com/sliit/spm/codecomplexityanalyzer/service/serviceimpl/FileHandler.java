@@ -22,7 +22,6 @@ import java.util.Objects;
 
 public class FileHandler {
 
-
     public static Stack stack;
     private Project project;
     private String projectRoot = "/Users/udeesharukshan/Documents/Algorithm-Complexity-Calculator/gg/code";
