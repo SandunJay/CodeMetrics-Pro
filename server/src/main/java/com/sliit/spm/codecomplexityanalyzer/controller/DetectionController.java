@@ -1,21 +1,21 @@
 package com.sliit.spm.codecomplexityanalyzer.controller;
 
 import com.sliit.spm.codecomplexityanalyzer.model.Project;
-//import com.sliit.spm.codecomplexityanalyzer.service.serviceimpl.FileHandlerService;
+import com.sliit.spm.codecomplexityanalyzer.service.serviceimpl.DesignPatternDetectionService;
 import com.sliit.spm.codecomplexityanalyzer.service.serviceimpl.FileHandler;
 import com.sliit.spm.codecomplexityanalyzer.service.serviceimpl.ImageScanner;
 import com.sliit.spm.codecomplexityanalyzer.utils.ErrorMessages;
 import com.sliit.spm.codecomplexityanalyzer.utils.LanguageDetector;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 @RestController
@@ -42,15 +42,15 @@ public class DetectionController {
 
 //    To detect a code in Local storage and read its directories and subdirectories
     @GetMapping("/analyze")
-    public ResponseEntity<List<Project>> analyzeBaseProject(@RequestParam String path){
-        List<Project> projectInfoList = languageDetector.analyzeProjects(path);
-        if (projectInfoList.isEmpty()) {
+    public ResponseEntity<List<Project>> analyzeBaseProject(@RequestParam String filePath){
+        List<Project> projectList = languageDetector.analyzeProjects(filePath);
+        if (projectList.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
         Project project = new Project();
         project.setProjectKey("ACC");
-        if (!path.isEmpty()) {
-            project.setSourcePath(path);
+        if (!filePath.isEmpty()) {
+            project.setSourcePath(filePath);
         } else {
             throw new NoSuchElementException(ErrorMessages.SP_NOT_FOUND_ERR);
         }
@@ -77,5 +77,26 @@ public class DetectionController {
         }
     }
 
+//  Below methods are generated for detecting design patterns
+    @Autowired
+    private DesignPatternDetectionService detectionService;
 
+    @PostMapping("/detect")
+    public ResponseEntity<Map<String, Boolean>> detectPatterns(@RequestParam("classFile") MultipartFile classFile) throws ClassNotFoundException {
+        // Load the class from the file (this is a placeholder)
+        Class<?> clazz = loadClassFromFile(classFile);
+        Map<String, Boolean> patterns = detectionService.detectPatterns(clazz);
+        return ResponseEntity.ok(patterns);
+    }
+
+    @PostMapping("/detect-from-dir")
+    public ResponseEntity<Map<String, Map<String, Boolean>>> detectPatternsFromDirectory(@RequestParam("directoryPath") String directoryPath) throws ClassNotFoundException, IOException {
+        Map<String, Map<String, Boolean>> results = detectionService.detectPatternsFromDirectory(directoryPath);
+        return ResponseEntity.ok(results);
+    }
+
+    private Class<?> loadClassFromFile(MultipartFile file) throws ClassNotFoundException {
+        // Implement loading logic for class from file
+        return null;
+    }
 }
