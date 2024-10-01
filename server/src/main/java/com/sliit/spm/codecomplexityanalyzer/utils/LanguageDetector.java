@@ -86,46 +86,127 @@ public class LanguageDetector {
         return countInAllLanguages == 1;
     }
 
-    public List<Project> analyzeProjects(String folderPath) {
-        File rootFolder = new File(folderPath);
-        List<Project> projects = new ArrayList<>();
+//    public void analyzeProjects(Project project) {
+//        System.out.println(project.getSourcePath());
+//        File rootFolder = new File(project.getSourcePath());
+//
+//        if (rootFolder.exists() && rootFolder.isDirectory()) {
+//            File[] subFolders = rootFolder.listFiles(File::isDirectory);
+//            if (subFolders != null) {
+//                for (File subFolder : subFolders) {
+//                    String language = detectLanguage(subFolder);
+//                    System.out.println(language);
+//                    if (language != null) {
+//                        project.setLanguage(language);
+//                    }
+//                }
+//            }
+//        }
+//    }
+//
+//    private String detectLanguage(File projectFolder) {
+//        // Get the list of files and directories in the current folder
+//        File[] files = projectFolder.listFiles();
+//
+//        if (files != null) {
+//            // Iterate over files and directories
+//            for (File file : files) {
+//                // If it's a file, check its extension for language detection
+//                if (file.isFile()) {
+//                    String fileName = file.getName().toLowerCase();
+//                    if (fileName.endsWith(".java") || fileName.equals("pom.xml") || fileName.equals("build.gradle")) {
+//                        return "Java";
+//                    } else if (fileName.endsWith(".js") || fileName.endsWith(".ts") || fileName.equals("package.json")) {
+//                        return "JavaScript/TypeScript";
+//                    } else if (fileName.endsWith(".go") || fileName.equals("go.mod")) {
+//                        return "Golang";
+//                    } else if (fileName.endsWith(".py") || fileName.equals("requirements.txt")) {
+//                        return "Python";
+//                    } else if (fileName.endsWith(".cpp") || fileName.endsWith(".h") || fileName.endsWith(".c")) {
+//                        return "C++";
+//                    } else if (fileName.endsWith(".kt")) {
+//                        return "Kotlin";
+//                    } else if (fileName.endsWith(".rb") || fileName.equals("Gemfile")) {
+//                        return "Ruby";
+//                    }
+//                }
+//                // If it's a directory, recursively search inside it
+//                else if (file.isDirectory()) {
+//                    String detectedLanguage = detectLanguage(file);
+//                    if (detectedLanguage != null) {
+//                        return detectedLanguage;  // Return as soon as a language is detected
+//                    }
+//                }
+//            }
+//        }
+//
+//        // Return null if no language could be detected in the current folder or subfolders
+//        return null;
+//    }
 
+    public void analyzeProjects(Project project) {
+        System.out.println("Scanning project at: " + project.getSourcePath());
+        File rootFolder = new File(project.getSourcePath());
         if (rootFolder.exists() && rootFolder.isDirectory()) {
-            File[] subFolders = rootFolder.listFiles(File::isDirectory);
-            if (subFolders != null) {
-                for (File subFolder : subFolders) {
-                    String language = detectLanguage(subFolder);
-                    if (language != null) {
-                        projects.add(new Project(subFolder.getName(), null,folderPath, language, null, 0));
+            // Start detecting languages from the root folder and all subfolders
+            String language = detectLanguageRecursive(rootFolder);
+            System.out.println("Detected language: " + language);
+            if (language != null) {
+                project.setLanguage(language);
+            } else {
+                project.setLanguage("Unknown Language");  // Default if no language is detected
+            }
+        }
+    }
+
+    private String detectLanguageRecursive(File folder) {
+        File[] files = folder.listFiles();
+
+        if (files != null) {
+            // First, check files in the current directory
+            for (File file : files) {
+                if (file.isFile()) {
+                    String detectedLanguage = detectLanguageFromFile(file);
+                    if (detectedLanguage != null) {
+                        return detectedLanguage;  // Return as soon as a language is detected
+                    }
+                }
+            }
+
+            // If no files detected a language, recursively check subfolders
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    String detectedLanguage = detectLanguageRecursive(file);
+                    if (detectedLanguage != null) {
+                        return detectedLanguage;  // Return as soon as a language is detected
                     }
                 }
             }
         }
-        return projects;
+
+        return null;  // Return null if no language could be detected
     }
 
-    private String detectLanguage(File projectFolder) {
-        File[] files = projectFolder.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                String fileName = file.getName().toLowerCase();
-                if (fileName.endsWith(".java") || fileName.equals("pom.xml") || fileName.equals("build.gradle")) {
-                    return "Java";
-                } else if (fileName.endsWith(".js") || fileName.endsWith(".ts") || fileName.equals("package.json")) {
-                    return "JavaScript/TypeScript";
-                } else if (fileName.endsWith(".go") || fileName.equals("go.mod")) {
-                    return "Golang";
-                } else if (fileName.endsWith(".py") || fileName.equals("requirements.txt")) {
-                    return "Python";
-                } else if (fileName.endsWith(".cpp") || fileName.endsWith(".h") || fileName.endsWith(".c")) {
-                    return "C++";
-                } else if (fileName.endsWith(".kt")) {
-                    return "Kotlin";
-                } else if (fileName.endsWith(".rb") || fileName.equals("Gemfile")) {
-                    return "Ruby";
-                }
-            }
+    private String detectLanguageFromFile(File file) {
+        String fileName = file.getName().toLowerCase();
+
+        if (fileName.endsWith(".java") || fileName.equals("pom.xml") || fileName.equals("build.gradle")) {
+            return "Java";
+        } else if (fileName.endsWith(".js") || fileName.endsWith(".ts") || fileName.equals("package.json")) {
+            return "JavaScript/TypeScript";
+        } else if (fileName.endsWith(".go") || fileName.equals("go.mod")) {
+            return "Golang";
+        } else if (fileName.endsWith(".py") || fileName.equals("requirements.txt")) {
+            return "Python";
+        } else if (fileName.endsWith(".cpp") || fileName.endsWith(".h") || fileName.endsWith(".c")) {
+            return "C++";
+        } else if (fileName.endsWith(".kt")) {
+            return "Kotlin";
+        } else if (fileName.endsWith(".rb") || fileName.equals("Gemfile")) {
+            return "Ruby";
         }
-        return null;
+
+        return null;  // No matching file detected for known languages
     }
+
 }

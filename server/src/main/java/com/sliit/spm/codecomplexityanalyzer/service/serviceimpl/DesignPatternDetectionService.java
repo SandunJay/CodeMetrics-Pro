@@ -1,55 +1,107 @@
 package com.sliit.spm.codecomplexityanalyzer.service.serviceimpl;
 
+import com.github.javaparser.JavaParser;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.sliit.spm.codecomplexityanalyzer.model.Project;
 import com.sliit.spm.codecomplexityanalyzer.service.pattern.*;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
 
 @Service
 public class DesignPatternDetectionService {
-    public Map<String, Boolean> detectPatterns(Class<?> clazz) {
+    public Map<String, Boolean> detectPatterns(String code, Project project) throws Exception {
         Map<String, Boolean> detectionResults = new HashMap<>();
 
-        detectionResults.put("Singleton", new SingletonDetector().isSingleton(clazz));
-        detectionResults.put("Factory Method", new FactoryMethodDetector().isFactoryMethod(clazz));
-        detectionResults.put("Adapter", new AdapterDetector().isAdapter(clazz));
-        detectionResults.put("Composite", new CompositeDetector().isComposite(clazz));
-        detectionResults.put("Decorator", new DecoratorDetector().isDecorator(clazz));
-        detectionResults.put("Chain of Responsibility", new ChainOfResponsibilityDetector().isChainOfResponsibility(clazz));
-        detectionResults.put("Observer", new ObserverDetector().isObserver(clazz));
-        detectionResults.put("Strategy", new StrategyDetector().isStrategy(clazz));
-
-        // Add other patterns similarly...
+        switch (project.getLanguage().toLowerCase()) {
+            case "java":
+                detectionResults.putAll(detectJavaPatterns(code, project));
+                break;
+            case "python":
+                detectionResults.putAll(detectPythonPatterns(code, project));
+                break;
+            case "c++":
+                detectionResults.putAll(detectCppPatterns(code, project));
+                break;
+            case "golang":
+                detectionResults.putAll(detectGoPatterns(code, project));
+                break;
+            default:
+                detectionResults.put("Unknown Language", false);
+        }
         return detectionResults;
     }
 
-    public Map<String, Map<String, Boolean>> detectPatternsFromDirectory(String directoryPath) throws IOException, ClassNotFoundException {
-        Map<String, Map<String, Boolean>> result = new HashMap<>();
 
-        Files.walk(Paths.get(directoryPath))
-                .filter(Files::isRegularFile)
-                .forEach(path -> {
-                    try {
-                        // Convert each file to a Class object or use parsing logic here
-                        Class<?> clazz = loadClassFromFile(path);
-                        Map<String, Boolean> patterns = detectPatterns(clazz);
-                        result.put(path.toString(), patterns);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                });
+    public Map<String, Boolean> detectJavaPatterns(String code, Project project) throws Exception {
+        Map<String, Boolean> detectionResults = new HashMap<>();
+        JavaParser parser = new JavaParser();
 
-        return result;
+        try {
+            Optional<CompilationUnit> cu = parser.parse(code).getResult();
+
+            cu.ifPresent(unit -> {
+                List<PatternDetector> detectors = List.of(
+                        new PatternDetector("Singleton", new SingletonDetector()::isSingleton),
+                        new PatternDetector("Factory Method", new FactoryMethodDetector()::isFactoryMethod),
+                        new PatternDetector("Adapter", new AdapterDetector()::isAdapter),
+                        new PatternDetector("Strategy", new StrategyDetector()::isStrategy),
+                        new PatternDetector("Observer", new ObserverDetector()::isObserver),
+                        new PatternDetector("Composite", new CompositeDetector()::isComposite),
+                        new PatternDetector("Decorator", new DecoratorDetector()::isDecorator),
+                        new PatternDetector("Chain of Responsibility", new ChainOfResponsibilityDetector()::isChainOfResponsibility)
+                );
+
+                unit.findAll(ClassOrInterfaceDeclaration.class).forEach(clazz ->
+                        detectors.forEach(detector -> {
+                            boolean detected = detector.getDetector().apply(clazz);
+                            detectionResults.put(detector.getPatternName(), detectionResults.getOrDefault(detector.getPatternName(), false) || detected);
+                            if (detected) project.getPatterns().add(detector.getPatternName());
+                        })
+                );
+            });
+        } catch (Exception e) {
+            throw new Exception("Error processing design pattern detection: " + e.getMessage());
+        }
+
+        return detectionResults;
     }
 
-    private Class<?> loadClassFromFile(Path path) throws ClassNotFoundException {
-        // Logic to load class from file (this is a placeholder)
-        // You could use a library like JavaParser for parsing Java files
-        return null;
+
+    private Map<String, Boolean> detectPythonPatterns(String code, Project project) {
+        return new HashMap<>();
+    }
+
+    private Map<String, Boolean> detectCppPatterns(String code, Project project) {
+        return new HashMap<>();
+    }
+
+    private Map<String, Boolean> detectGoPatterns(String code, Project project) {
+        return new HashMap<>();
+    }
+
+}
+
+ class PatternDetector {
+    private String patternName;
+    private Function<ClassOrInterfaceDeclaration, Boolean> detector;
+
+    public PatternDetector(String patternName, Function<ClassOrInterfaceDeclaration, Boolean> detector) {
+        this.patternName = patternName;
+        this.detector = detector;
+    }
+
+    public String getPatternName() {
+        return patternName;
+    }
+
+    public Function<ClassOrInterfaceDeclaration, Boolean> getDetector() {
+        return detector;
     }
 }
+

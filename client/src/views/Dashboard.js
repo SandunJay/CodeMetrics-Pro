@@ -49,6 +49,13 @@ import {
   chartExample3,
   chartExample4,
 } from "variables/charts.js";
+import Icons from "./Icons";
+import { Await } from "react-router-dom";
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function Dashboard(props) {
 
@@ -132,15 +139,254 @@ const [chartData,setChartData]=useState();
     const chartFunction = chartExample1[bigChartData];
     return chartFunction ? chartFunction(canvas, lineCounts) : {};
   };
+
+
+  // const [files, setFiles] = useState([]);
+
+  // const handleFilePicker = async (event) => {
+  //   const selectedFiles = event.target.files;
+  //   const fileArray = Array.from(selectedFiles);
+  //   setFiles(fileArray);
+
+  //   if (fileArray.length === 1) {
+  //     // If there's only one file, no need to zip, just handle it
+  //     console.log('Selected single file:', fileArray[0].name);
+  //   } else {
+  //     // Multiple files, create zip
+  //     const zip = new JSZip();
+  //     fileArray.forEach((file) => {
+  //       zip.file(file.webkitRelativePath, file);
+  //     });
+
+  //     const content = await zip.generateAsync({ type: 'blob' });
+  //     saveAs(content, 'files.zip');
+  //   }
+  // };
+
+  const [isOpen, setIsOpen] = useState(false);
+  const [option, setOption] = useState('add'); // Initially show Add
+  const [text, setText] = useState(''); // Text input for Add option
+  const [files, setFiles] = useState([]); // For file/directory picking
+  const [selectedFile, setSelectedFile] = useState(null); // For single file picking
+
+  const toggleModal = () => setIsOpen(!isOpen);
+
+  const handleFilePicker = (event) => {
+    const selectedFiles = Array.from(event.target.files);
+    setFiles(selectedFiles);
+
+    if (selectedFiles.length === 1) {
+      setSelectedFile(selectedFiles[0]);
+    }
+  };
+
+  const handleTextSubmit = async () => {
+    try {
+      const response = await fetch('http://localhost:8085/api/v1/detect/text', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code: text }),
+      });
+
+      toggleModal(); // Close the modal upon success
+      handleToast(response.ok ? 'success' : 'fail');
+    } catch (error) {
+      toggleModal(); // Close the modal even if there's an error
+      handleToast('fail');
+    }
+  };
+
+  const handleZipAndUpload = async () => {
+    const zip = new JSZip();
+    files.forEach((file) => {
+      if (!file.webkitRelativePath.includes('node_modules') && !file.webkitRelativePath.includes('.git') &&
+        !file.webkitRelativePath.includes('.idea') && !file.webkitRelativePath.includes('.mvn')) {
+        zip.file(file.webkitRelativePath, file);
+      }
+    });
+
+    const content = await zip.generateAsync({ type: 'blob' });
+    // Upload the zip to the backend
+    const formData = new FormData();
+    formData.append('zipFile', content, 'files.zip');
+
+    try {
+      console.error('uploading file');
+      const response = await fetch('http://localhost:8085/api/v1/detect/zip', {
+        method: 'POST',
+        body: formData,
+      });
+
+      toggleModal(); // Close the modal upon success
+      handleToast(response.ok ? 'success' : 'fail');
+
+      // if (response.ok) {
+      //   console.log('Zip uploaded successfully');
+      // } else {
+      //   console.error('Error uploading zip:', response.statusText);
+      // }
+    } catch (error) {
+      // console.error('Error uploading zip:', error);
+      toggleModal(); // Close the modal even if there's an error
+      handleToast('fail');
+    }
+  };
+
+  const handleFileUpload = async () => {
+    const formData = new FormData();
+    formData.append('classFile', selectedFile);
+
+    try {
+      console.error('uploading file');
+      const response = await fetch('http://localhost:8085/api/v1/detect/file', {
+        method: 'POST',
+        body: formData,
+      });
+      // if (response.ok) {
+      //   console.log('File uploaded successfully');
+      // } else {
+      //   console.error('Error uploading file:', response.statusText);
+      // }
+      toggleModal(); // Close the modal upon success
+      handleToast(response.ok ? 'success' : 'fail');
+    } catch (error) {
+      // console.error('Error uploading file:', error);
+      toggleModal(); // Close the modal even if there's an error
+      handleToast('fail');
+    }
+  };
+
+
+  const handleToast = (status) => {
+    if (status === 'success') {
+      toast.success('Upload successful!', {
+        position: "top-right",
+        autoClose: 3000, // 5 seconds
+        style: { backgroundColor: 'white', color: 'green' }, // Green toast for success
+      });
+    } else {
+      toast.error('Upload failed!', {
+        position: "top-right",
+        autoClose: 3000, // 5 seconds
+        style: { backgroundColor: 'white', color: 'red' }, // Red toast for failure
+      });
+    }
+  };
+  
+  // Add this to ensure toast notifications are shown
+  toast.apply();
+
   return (
     <>
       <div className="content">
+      <ToastContainer />
         <Row>
           <Col xs="12">
 
             <Card style={{padding: '20px', textAlign: 'center', fontSize: '1.5rem'}}>
               <h5 className="card-category"></h5>
-              <CardTitle tag="h2" style={{ textDecoration: 'underline' }}> Source Code</CardTitle>
+              <div>
+                <CardTitle tag="h2" style={{ textDecoration: 'underline' }}>
+                  Source Code
+                  
+                  {/* <input
+                    type="file"
+                    webkitdirectory="true"
+                    directory=""
+                    multiple
+                    onChange={handleFilePicker}
+                  /> */}
+
+                  <div>
+                  <Button color="primary" onClick={toggleModal}>
+                      Image
+                    </Button>
+
+                    <Button color="primary" onClick={toggleModal}>
+                      Add
+                    </Button>
+
+                    <Modal isOpen={isOpen} toggle={toggleModal} size="lg">
+                      <ModalHeader toggle={toggleModal}>Source Code</ModalHeader>
+                      <ModalBody>
+                        {/* Options to select */}
+                        <div>
+                          <Button color={option === 'add' ? 'primary' : 'secondary'} onClick={() => setOption('add')}>
+                            Add
+                          </Button>
+                          <Button color={option === 'file' ? 'primary' : 'secondary'} onClick={() => setOption('file')}>
+                            Pick File
+                          </Button>
+                          <Button color={option === 'directory' ? 'primary' : 'secondary'} onClick={() => setOption('directory')}>
+                            Pick Directory
+                          </Button>
+                        </div>
+
+                        <hr />
+
+                        {/* Dynamic Content Based on Selection */}
+                        {option === 'add' && (
+                          <Input
+                            type="textarea"
+                            value={text}
+                            onChange={(e) => setText(e.target.value)}
+                            rows="10"
+                            placeholder="Enter source code ..."
+                            style={{ color: 'black', backgroundColor: 'white' }}
+                          />
+                        )}
+
+                        {option === 'file' && (
+                          <div>
+                            <input type="file" onChange={handleFilePicker} />
+                            {selectedFile && <p>Selected File: {selectedFile.name}</p>}
+                          </div>
+                        )}
+                        {option === 'directory' && (
+                          <div>
+                            <input type="file" webkitdirectory="true" directory="" multiple onChange={handleFilePicker} />
+                            <div>
+                              <h5 style={{ color: 'black' }}>Selected Files</h5>
+                              <ul>
+                                {files.slice(0, 20).map((file, index) => (
+                                  <li key={index} style={{ color: 'gray' }}>{file.webkitRelativePath}</li>
+                                ))}
+                                {files.length > 20 && <li style={{ color: 'gray' }}>... and {files.length - 20} more</li>}
+                              </ul>
+                            </div>
+                          </div>
+                        )}
+                      </ModalBody>
+                      <ModalFooter>
+                      {option === 'add' && (
+                          <Button color="primary" onClick={handleTextSubmit} className="p-2 ml-3 mb-2">
+                            Submit
+                          </Button>
+                        )}
+
+                        {option === 'file' && (
+                          <Button color="primary" onClick={handleFileUpload} className="p-2 ml-3 mb-2">
+                            Upload File
+                          </Button>
+                        )}
+
+                        {option === 'directory' && (
+                          <Button color="primary" onClick={handleZipAndUpload} className="p-2 ml-3 mb-2">
+                            Upload Zipped Directory
+                          </Button>
+                        )}
+
+                        <Button color="secondary" onClick={toggleModal} className="p-2 mr-3 mb-2">
+                          Cancel
+                        </Button>
+                      </ModalFooter>
+                    </Modal>
+                  </div>
+                </CardTitle>
+
+              </div>
               <div style={{fontSize: '1rem', fontWeight: 'bold', color: 'white'}}>
                 <div>
                   <pre style={{whiteSpace: 'pre-wrap', wordBreak: 'break-all'}}>
@@ -166,7 +412,13 @@ const [chartData,setChartData]=useState();
               <CardTitle tag="h2">Code Index</CardTitle>
               <div style={{fontSize: '3rem', fontWeight: 'bold',color: 'white'}}>{totals.ci}</div>
             </Card>
-
+          </Col>
+          <Col xs="4">
+            <Card style={{padding: '20px', textAlign: 'center', fontSize: '1.5rem'}}>
+              <h5 className="card-category"></h5>
+              <CardTitle tag="h2">Design Patterns</CardTitle>
+              <div style={{fontSize: '3rem', fontWeight: 'bold',color: 'white'}}>Design Pattern list</div>
+            </Card>
           </Col>
           <Col xs="4">
 
@@ -252,395 +504,6 @@ const [chartData,setChartData]=useState();
           </Col>
 
         </Row>
-        {/*<Row>*/}
-        {/*  <Col lg="4">*/}
-        {/*    <Card className="card-chart">*/}
-        {/*      <CardHeader>*/}
-        {/*      <h5 className="card-category">Total Shipments</h5>*/}
-        {/*        <CardTitle tag="h3">*/}
-        {/*          <i className="tim-icons icon-bell-55 text-info" /> 763,215*/}
-        {/*        </CardTitle>*/}
-        {/*      </CardHeader>*/}
-        {/*      <CardBody>*/}
-        {/*        <div className="chart-area">*/}
-        {/*          <Line*/}
-        {/*            data={chartExample2.data}*/}
-        {/*            options={chartExample2.options}*/}
-        {/*          />*/}
-        {/*        </div>*/}
-        {/*      </CardBody>*/}
-        {/*    </Card>*/}
-        {/*  </Col>*/}
-        {/*  <Col lg="4">*/}
-        {/*    <Card className="card-chart">*/}
-        {/*      <CardHeader>*/}
-        {/*        <h5 className="card-category">Daily Sales</h5>*/}
-        {/*        <CardTitle tag="h3">*/}
-        {/*          <i className="tim-icons icon-delivery-fast text-primary" />{" "}*/}
-        {/*          3,500€*/}
-        {/*        </CardTitle>*/}
-        {/*      </CardHeader>*/}
-        {/*      <CardBody>*/}
-        {/*        <div className="chart-area">*/}
-        {/*          <Bar*/}
-        {/*            data={chartExample3.data}*/}
-        {/*            options={chartExample3.options}*/}
-        {/*          />*/}
-        {/*        </div>*/}
-        {/*      </CardBody>*/}
-        {/*    </Card>*/}
-        {/*  </Col>*/}
-        {/*  <Col lg="4">*/}
-        {/*    <Card className="card-chart">*/}
-        {/*      <CardHeader>*/}
-        {/*        <h5 className="card-category">Completed Tasks</h5>*/}
-        {/*        <CardTitle tag="h3">*/}
-        {/*          <i className="tim-icons icon-send text-success" /> 12,100K*/}
-        {/*        </CardTitle>*/}
-        {/*      </CardHeader>*/}
-        {/*      <CardBody>*/}
-        {/*        <div className="chart-area">*/}
-        {/*          <Line*/}
-        {/*            data={chartExample4.data}*/}
-        {/*            options={chartExample4.options}*/}
-        {/*          />*/}
-        {/*        </div>*/}
-        {/*      </CardBody>*/}
-        {/*    </Card>*/}
-        {/*  </Col>*/}
-        {/*</Row>*/}
-        {/*<Row>*/}
-        {/*  <Col lg="6" md="12">*/}
-        {/*    <Card className="card-tasks">*/}
-        {/*      <CardHeader>*/}
-        {/*        <h6 className="title d-inline">Tasks(5)</h6>*/}
-        {/*        <p className="card-category d-inline"> today</p>*/}
-        {/*        <UncontrolledDropdown>*/}
-        {/*          <DropdownToggle*/}
-        {/*            caret*/}
-        {/*            className="btn-icon"*/}
-        {/*            color="link"*/}
-        {/*            data-toggle="dropdown"*/}
-        {/*            type="button"*/}
-        {/*          >*/}
-        {/*            <i className="tim-icons icon-settings-gear-63" />*/}
-        {/*          </DropdownToggle>*/}
-        {/*          <DropdownMenu aria-labelledby="dropdownMenuLink" right>*/}
-        {/*            <DropdownItem*/}
-        {/*              href="#pablo"*/}
-        {/*              onClick={(e) => e.preventDefault()}*/}
-        {/*            >*/}
-        {/*              Action*/}
-        {/*            </DropdownItem>*/}
-        {/*            <DropdownItem*/}
-        {/*              href="#pablo"*/}
-        {/*              onClick={(e) => e.preventDefault()}*/}
-        {/*            >*/}
-        {/*              Another action*/}
-        {/*            </DropdownItem>*/}
-        {/*            <DropdownItem*/}
-        {/*              href="#pablo"*/}
-        {/*              onClick={(e) => e.preventDefault()}*/}
-        {/*            >*/}
-        {/*              Something else*/}
-        {/*            </DropdownItem>*/}
-        {/*          </DropdownMenu>*/}
-        {/*        </UncontrolledDropdown>*/}
-        {/*      </CardHeader>*/}
-        {/*      <CardBody>*/}
-        {/*        <div className="table-full-width table-responsive">*/}
-        {/*          <Table>*/}
-        {/*            <tbody>*/}
-        {/*              <tr>*/}
-        {/*                <td>*/}
-        {/*                  <FormGroup check>*/}
-        {/*                    <Label check>*/}
-        {/*                      <Input defaultValue="" type="checkbox" />*/}
-        {/*                      <span className="form-check-sign">*/}
-        {/*                        <span className="check" />*/}
-        {/*                      </span>*/}
-        {/*                    </Label>*/}
-        {/*                  </FormGroup>*/}
-        {/*                </td>*/}
-        {/*                <td>*/}
-        {/*                  <p className="title">Update the Documentation</p>*/}
-        {/*                  <p className="text-muted">*/}
-        {/*                    Dwuamish Head, Seattle, WA 8:47 AM*/}
-        {/*                  </p>*/}
-        {/*                </td>*/}
-        {/*                <td className="td-actions text-right">*/}
-        {/*                  <Button*/}
-        {/*                    color="link"*/}
-        {/*                    id="tooltip636901683"*/}
-        {/*                    title=""*/}
-        {/*                    type="button"*/}
-        {/*                  >*/}
-        {/*                    <i className="tim-icons icon-pencil" />*/}
-        {/*                  </Button>*/}
-        {/*                  <UncontrolledTooltip*/}
-        {/*                    delay={0}*/}
-        {/*                    target="tooltip636901683"*/}
-        {/*                    placement="right"*/}
-        {/*                  >*/}
-        {/*                    Edit Task*/}
-        {/*                  </UncontrolledTooltip>*/}
-        {/*                </td>*/}
-        {/*              </tr>*/}
-        {/*              <tr>*/}
-        {/*                <td>*/}
-        {/*                  <FormGroup check>*/}
-        {/*                    <Label check>*/}
-        {/*                      <Input*/}
-        {/*                        defaultChecked*/}
-        {/*                        defaultValue=""*/}
-        {/*                        type="checkbox"*/}
-        {/*                      />*/}
-        {/*                      <span className="form-check-sign">*/}
-        {/*                        <span className="check" />*/}
-        {/*                      </span>*/}
-        {/*                    </Label>*/}
-        {/*                  </FormGroup>*/}
-        {/*                </td>*/}
-        {/*                <td>*/}
-        {/*                  <p className="title">GDPR Compliance</p>*/}
-        {/*                  <p className="text-muted">*/}
-        {/*                    The GDPR is a regulation that requires businesses to*/}
-        {/*                    protect the personal data and privacy of Europe*/}
-        {/*                    citizens for transactions that occur within EU*/}
-        {/*                    member states.*/}
-        {/*                  </p>*/}
-        {/*                </td>*/}
-        {/*                <td className="td-actions text-right">*/}
-        {/*                  <Button*/}
-        {/*                    color="link"*/}
-        {/*                    id="tooltip457194718"*/}
-        {/*                    title=""*/}
-        {/*                    type="button"*/}
-        {/*                  >*/}
-        {/*                    <i className="tim-icons icon-pencil" />*/}
-        {/*                  </Button>*/}
-        {/*                  <UncontrolledTooltip*/}
-        {/*                    delay={0}*/}
-        {/*                    target="tooltip457194718"*/}
-        {/*                    placement="right"*/}
-        {/*                  >*/}
-        {/*                    Edit Task*/}
-        {/*                  </UncontrolledTooltip>*/}
-        {/*                </td>*/}
-        {/*              </tr>*/}
-        {/*              <tr>*/}
-        {/*                <td>*/}
-        {/*                  <FormGroup check>*/}
-        {/*                    <Label check>*/}
-        {/*                      <Input defaultValue="" type="checkbox" />*/}
-        {/*                      <span className="form-check-sign">*/}
-        {/*                        <span className="check" />*/}
-        {/*                      </span>*/}
-        {/*                    </Label>*/}
-        {/*                  </FormGroup>*/}
-        {/*                </td>*/}
-        {/*                <td>*/}
-        {/*                  <p className="title">Solve the issues</p>*/}
-        {/*                  <p className="text-muted">*/}
-        {/*                    Fifty percent of all respondents said they would be*/}
-        {/*                    more likely to shop at a company*/}
-        {/*                  </p>*/}
-        {/*                </td>*/}
-        {/*                <td className="td-actions text-right">*/}
-        {/*                  <Button*/}
-        {/*                    color="link"*/}
-        {/*                    id="tooltip362404923"*/}
-        {/*                    title=""*/}
-        {/*                    type="button"*/}
-        {/*                  >*/}
-        {/*                    <i className="tim-icons icon-pencil" />*/}
-        {/*                  </Button>*/}
-        {/*                  <UncontrolledTooltip*/}
-        {/*                    delay={0}*/}
-        {/*                    target="tooltip362404923"*/}
-        {/*                    placement="right"*/}
-        {/*                  >*/}
-        {/*                    Edit Task*/}
-        {/*                  </UncontrolledTooltip>*/}
-        {/*                </td>*/}
-        {/*              </tr>*/}
-        {/*              <tr>*/}
-        {/*                <td>*/}
-        {/*                  <FormGroup check>*/}
-        {/*                    <Label check>*/}
-        {/*                      <Input defaultValue="" type="checkbox" />*/}
-        {/*                      <span className="form-check-sign">*/}
-        {/*                        <span className="check" />*/}
-        {/*                      </span>*/}
-        {/*                    </Label>*/}
-        {/*                  </FormGroup>*/}
-        {/*                </td>*/}
-        {/*                <td>*/}
-        {/*                  <p className="title">Release v2.0.0</p>*/}
-        {/*                  <p className="text-muted">*/}
-        {/*                    Ra Ave SW, Seattle, WA 98116, SUA 11:19 AM*/}
-        {/*                  </p>*/}
-        {/*                </td>*/}
-        {/*                <td className="td-actions text-right">*/}
-        {/*                  <Button*/}
-        {/*                    color="link"*/}
-        {/*                    id="tooltip818217463"*/}
-        {/*                    title=""*/}
-        {/*                    type="button"*/}
-        {/*                  >*/}
-        {/*                    <i className="tim-icons icon-pencil" />*/}
-        {/*                  </Button>*/}
-        {/*                  <UncontrolledTooltip*/}
-        {/*                    delay={0}*/}
-        {/*                    target="tooltip818217463"*/}
-        {/*                    placement="right"*/}
-        {/*                  >*/}
-        {/*                    Edit Task*/}
-        {/*                  </UncontrolledTooltip>*/}
-        {/*                </td>*/}
-        {/*              </tr>*/}
-        {/*              <tr>*/}
-        {/*                <td>*/}
-        {/*                  <FormGroup check>*/}
-        {/*                    <Label check>*/}
-        {/*                      <Input defaultValue="" type="checkbox" />*/}
-        {/*                      <span className="form-check-sign">*/}
-        {/*                        <span className="check" />*/}
-        {/*                      </span>*/}
-        {/*                    </Label>*/}
-        {/*                  </FormGroup>*/}
-        {/*                </td>*/}
-        {/*                <td>*/}
-        {/*                  <p className="title">Export the processed files</p>*/}
-        {/*                  <p className="text-muted">*/}
-        {/*                    The report also shows that consumers will not easily*/}
-        {/*                    forgive a company once a breach exposing their*/}
-        {/*                    personal data occurs.*/}
-        {/*                  </p>*/}
-        {/*                </td>*/}
-        {/*                <td className="td-actions text-right">*/}
-        {/*                  <Button*/}
-        {/*                    color="link"*/}
-        {/*                    id="tooltip831835125"*/}
-        {/*                    title=""*/}
-        {/*                    type="button"*/}
-        {/*                  >*/}
-        {/*                    <i className="tim-icons icon-pencil" />*/}
-        {/*                  </Button>*/}
-        {/*                  <UncontrolledTooltip*/}
-        {/*                    delay={0}*/}
-        {/*                    target="tooltip831835125"*/}
-        {/*                    placement="right"*/}
-        {/*                  >*/}
-        {/*                    Edit Task*/}
-        {/*                  </UncontrolledTooltip>*/}
-        {/*                </td>*/}
-        {/*              </tr>*/}
-        {/*              <tr>*/}
-        {/*                <td>*/}
-        {/*                  <FormGroup check>*/}
-        {/*                    <Label check>*/}
-        {/*                      <Input defaultValue="" type="checkbox" />*/}
-        {/*                      <span className="form-check-sign">*/}
-        {/*                        <span className="check" />*/}
-        {/*                      </span>*/}
-        {/*                    </Label>*/}
-        {/*                  </FormGroup>*/}
-        {/*                </td>*/}
-        {/*                <td>*/}
-        {/*                  <p className="title">Arival at export process</p>*/}
-        {/*                  <p className="text-muted">*/}
-        {/*                    Capitol Hill, Seattle, WA 12:34 AM*/}
-        {/*                  </p>*/}
-        {/*                </td>*/}
-        {/*                <td className="td-actions text-right">*/}
-        {/*                  <Button*/}
-        {/*                    color="link"*/}
-        {/*                    id="tooltip217595172"*/}
-        {/*                    title=""*/}
-        {/*                    type="button"*/}
-        {/*                  >*/}
-        {/*                    <i className="tim-icons icon-pencil" />*/}
-        {/*                  </Button>*/}
-        {/*                  <UncontrolledTooltip*/}
-        {/*                    delay={0}*/}
-        {/*                    target="tooltip217595172"*/}
-        {/*                    placement="right"*/}
-        {/*                  >*/}
-        {/*                    Edit Task*/}
-        {/*                  </UncontrolledTooltip>*/}
-        {/*                </td>*/}
-        {/*              </tr>*/}
-        {/*            </tbody>*/}
-        {/*          </Table>*/}
-        {/*        </div>*/}
-        {/*      </CardBody>*/}
-        {/*    </Card>*/}
-        {/*  </Col>*/}
-        {/*  <Col lg="6" md="12">*/}
-        {/*    <Card>*/}
-        {/*      <CardHeader>*/}
-        {/*        <CardTitle tag="h4">Simple Table</CardTitle>*/}
-        {/*      </CardHeader>*/}
-        {/*      <CardBody>*/}
-        {/*        <Table className="tablesorter" responsive>*/}
-        {/*          <thead className="text-primary">*/}
-        {/*            <tr>*/}
-        {/*              <th>Name</th>*/}
-        {/*              <th>Country</th>*/}
-        {/*              <th>City</th>*/}
-        {/*              <th className="text-center">Salary</th>*/}
-        {/*            </tr>*/}
-        {/*          </thead>*/}
-        {/*          <tbody>*/}
-        {/*            <tr>*/}
-        {/*              <td>Dakota Rice</td>*/}
-        {/*              <td>Niger</td>*/}
-        {/*              <td>Oud-Turnhout</td>*/}
-        {/*              <td className="text-center">$36,738</td>*/}
-        {/*            </tr>*/}
-        {/*            <tr>*/}
-        {/*              <td>Minerva Hooper</td>*/}
-        {/*              <td>Curaçao</td>*/}
-        {/*              <td>Sinaai-Waas</td>*/}
-        {/*              <td className="text-center">$23,789</td>*/}
-        {/*            </tr>*/}
-        {/*            <tr>*/}
-        {/*              <td>Sage Rodriguez</td>*/}
-        {/*              <td>Netherlands</td>*/}
-        {/*              <td>Baileux</td>*/}
-        {/*              <td className="text-center">$56,142</td>*/}
-        {/*            </tr>*/}
-        {/*            <tr>*/}
-        {/*              <td>Philip Chaney</td>*/}
-        {/*              <td>Korea, South</td>*/}
-        {/*              <td>Overland Park</td>*/}
-        {/*              <td className="text-center">$38,735</td>*/}
-        {/*            </tr>*/}
-        {/*            <tr>*/}
-        {/*              <td>Doris Greene</td>*/}
-        {/*              <td>Malawi</td>*/}
-        {/*              <td>Feldkirchen in Kärnten</td>*/}
-        {/*              <td className="text-center">$63,542</td>*/}
-        {/*            </tr>*/}
-        {/*            <tr>*/}
-        {/*              <td>Mason Porter</td>*/}
-        {/*              <td>Chile</td>*/}
-        {/*              <td>Gloucester</td>*/}
-        {/*              <td className="text-center">$78,615</td>*/}
-        {/*            </tr>*/}
-        {/*            <tr>*/}
-        {/*              <td>Jon Porter</td>*/}
-        {/*              <td>Portugal</td>*/}
-        {/*              <td>Gloucester</td>*/}
-        {/*              <td className="text-center">$98,615</td>*/}
-        {/*            </tr>*/}
-        {/*          </tbody>*/}
-        {/*        </Table>*/}
-        {/*      </CardBody>*/}
-        {/*    </Card>*/}
-        {/*  </Col>*/}
-        {/*</Row>*/}
       </div>
     </>
   );

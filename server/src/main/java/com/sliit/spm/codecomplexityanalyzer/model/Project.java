@@ -2,7 +2,10 @@ package com.sliit.spm.codecomplexityanalyzer.model;
 
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Data
 @NoArgsConstructor
@@ -15,6 +18,7 @@ public class Project {
     private String projectKey;
     private String sourcePath;
     private String language;
+    private Set<String> patterns = new HashSet<>();
     private List<ProjectFile> files;
     private int cp;
 

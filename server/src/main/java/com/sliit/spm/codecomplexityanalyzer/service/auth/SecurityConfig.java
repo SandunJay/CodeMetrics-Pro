@@ -24,6 +24,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/detect/**").permitAll()
                         .requestMatchers("/api/v1/detect/analyze").permitAll() // Ensure this endpoint is also public if needed
                         .requestMatchers("/api/v1/detect/extract").permitAll() // Allow access to extract endpoint
+                        .requestMatchers("/api/v1/detect/image").permitAll() // Allow access to extract endpoint
+                        .requestMatchers("/api/v1/detect/pdf").permitAll() // Allow access to extract endpoint
                         .anyRequest().authenticated() // Securing other routes
                 )
                 .sessionManagement(session ->
