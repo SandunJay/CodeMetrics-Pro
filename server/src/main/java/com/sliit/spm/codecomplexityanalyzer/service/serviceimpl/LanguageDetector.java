@@ -1,4 +1,4 @@
-package com.sliit.spm.codecomplexityanalyzer.utils;
+package com.sliit.spm.codecomplexityanalyzer.service.serviceimpl;
 
 import com.sliit.spm.codecomplexityanalyzer.model.Project;
 import org.springframework.stereotype.Component;

@@ -2,7 +2,7 @@ package com.sliit.spm.codecomplexityanalyzer.service.serviceimpl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sliit.spm.codecomplexityanalyzer.model.GeminiAnalysisResponse;
+import com.sliit.spm.codecomplexityanalyzer.model.AiAnalysisResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -23,7 +23,9 @@ public class GroqApiService {
     private final ObjectMapper objectMapper;
 
     private static final String COMPLETIONS_ENDPOINT = "/chat/completions";
-    private static final String DEFAULT_COMMAND = "Get improved code for the following code:\\n"; // Properly escaped newline
+    private static final String IMPROVE_COMMAND = "Get improved code for the following code:\\n";
+    private static final String ANALYZE_COMMAND = "Analyze the below provided code:\\n";
+    private static final String COMPLETE_COMMAND = "If the below given code is incomplete, complete it and give the completed sourcecode. Without any additional words or text or instructions. just the completed source code :\\n";
     private static final String MODEL = "llama3-8b-8192";
 
     public GroqApiService(RestTemplate restTemplate, ObjectMapper objectMapper) {
@@ -31,22 +33,17 @@ public class GroqApiService {
         this.objectMapper = objectMapper;
     }
 
-    public GeminiAnalysisResponse analyzeCode(String code) throws Exception {
-        String sanitizedCode = sanitizeInput(code); // Sanitize input to avoid invalid characters
-        String response = sendPostRequest(COMPLETIONS_ENDPOINT, DEFAULT_COMMAND + sanitizedCode);
-        return parseAnalysisResponse(response);
-    }
-
-    public String getCompletedCode(String code) throws Exception {
+    public AiAnalysisResponse analyzeCode(String code) throws Exception {
         String sanitizedCode = sanitizeInput(code);
-        String response = sendPostRequest(COMPLETIONS_ENDPOINT, DEFAULT_COMMAND + sanitizedCode);
-        return parseCompletionResponse(response);
-    }
+        String overview = sendPostRequest(COMPLETIONS_ENDPOINT, ANALYZE_COMMAND + sanitizedCode);
+        String completedCode = sendPostRequest(COMPLETIONS_ENDPOINT, COMPLETE_COMMAND + sanitizedCode);
+        String improvedCode = sendPostRequest(COMPLETIONS_ENDPOINT, IMPROVE_COMMAND + sanitizedCode);
 
-    public String getImprovedCode(String code) throws Exception {
-        String sanitizedCode = sanitizeInput(code);
-        String response = sendPostRequest(COMPLETIONS_ENDPOINT, DEFAULT_COMMAND + sanitizedCode);
-        return parseImprovementResponse(response);
+        return AiAnalysisResponse.builder()
+                .overview(parseResponse(overview))
+                .completedCode(parseResponse(completedCode))
+                .improvedCode(parseResponse(improvedCode))
+                .build();
     }
 
     private String sendPostRequest(String endpoint, String content) throws Exception {
@@ -70,37 +67,19 @@ public class GroqApiService {
     }
 
     private String sanitizeInput(String code) {
-        // Escape any backslashes, double quotes, and remove invalid characters
-        return code.replace("\\", "\\\\")      // Escape backslashes
-                .replace("\"", "\\\"")      // Escape double quotes
-                .replace("\n", "\\n")       // Escape newline characters
-                .replace("\r", "");         // Remove carriage return characters
+        return code.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "");
     }
 
-    private GeminiAnalysisResponse parseAnalysisResponse(String response) throws Exception {
-        JsonNode root = objectMapper.readTree(response);
-        JsonNode choices = root.path("choices");
-        if (choices.isArray() && choices.size() > 0) {
-            String overview = choices.get(0).path("message").path("content").asText();
-            return new GeminiAnalysisResponse(overview);
-        }
-        return new GeminiAnalysisResponse("No analysis available");
-    }
-
-    private String parseCompletionResponse(String response) throws Exception {
-        return parseMessageFromChoices(response, "No completion available");
-    }
-
-    private String parseImprovementResponse(String response) throws Exception {
-        return parseMessageFromChoices(response, "No improvement suggestions available");
-    }
-
-    private String parseMessageFromChoices(String response, String defaultMsg) throws Exception {
+    private String parseResponse(String response) throws Exception {
         JsonNode root = objectMapper.readTree(response);
         JsonNode choices = root.path("choices");
         if (choices.isArray() && choices.size() > 0) {
             return choices.get(0).path("message").path("content").asText();
         }
-        return defaultMsg;
+        return "No response available";
     }
+
 }

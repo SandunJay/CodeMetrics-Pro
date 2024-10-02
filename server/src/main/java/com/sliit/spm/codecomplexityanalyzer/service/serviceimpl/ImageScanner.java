@@ -1,7 +1,6 @@
 package com.sliit.spm.codecomplexityanalyzer.service.serviceimpl;
 
 import com.sliit.spm.codecomplexityanalyzer.model.Project;
-import com.sliit.spm.codecomplexityanalyzer.utils.LanguageDetector;
 import net.sourceforge.tess4j.ITesseract;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
@@ -27,7 +26,6 @@ public class ImageScanner {
         tesseract.setDatapath("C:\\Program Files\\Tesseract-OCR\\tessdata");
         tesseract.setLanguage("eng");
 
-        // Convert MultipartFile to a temporary file
         File tempFile = File.createTempFile("image", ".png");
         file.transferTo(tempFile);
 
@@ -41,7 +39,6 @@ public class ImageScanner {
         } catch (TesseractException e) {
             e.printStackTrace();
         } finally {
-            // Clean up the temporary file
             tempFile.delete();
         }
 

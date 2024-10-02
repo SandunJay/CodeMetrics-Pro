@@ -3,12 +3,14 @@ package com.sliit.spm.codecomplexityanalyzer.service.serviceimpl;
 import com.sliit.spm.codecomplexityanalyzer.model.Line;
 import com.sliit.spm.codecomplexityanalyzer.model.Project;
 import com.sliit.spm.codecomplexityanalyzer.model.Stack;
-import com.sliit.spm.codecomplexityanalyzer.utils.Client;
 import com.sliit.spm.codecomplexityanalyzer.model.ProjectFile;
+import com.sliit.spm.codecomplexityanalyzer.repository.ProjectRepository;
+//import com.sliit.spm.codecomplexityanalyzer.utils.Client;
 import com.sliit.spm.codecomplexityanalyzer.utils.MethodAndVariableFinder;
 import com.sliit.spm.codecomplexityanalyzer.utils.RecursiveMethodLineNumberFinder;
 import org.apache.commons.io.FilenameUtils;
 import com.sliit.spm.codecomplexityanalyzer.service.analyzer.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 
@@ -31,11 +33,15 @@ public class FileHandler {
     private List<File> fileList = new ArrayList<>();
     private List<ProjectFile> projectFiles = new ArrayList<>();
 
-    public void readFiles(Project p) {
+    @Autowired
+    private ProjectRepository projectRepository;
+
+    public void readFiles(Project p) throws Exception {
         this.project = p;
         this.projectRoot = project.getSourcePath();
 
         getFiles(projectRoot);
+        System.out.println(fileList);
         calculateComplexity();
         this.project.setFiles(projectFiles);
 
@@ -46,7 +52,23 @@ public class FileHandler {
         }
         project.setCp(projectCp);
 
-        Client.sendAnalysisData(project);
+        updateProjectData(project);
+//        Client.sendAnalysisData(project);
+    }
+
+    private void updateProjectData(Project project) throws Exception {
+        try {
+            Project project1 = projectRepository.findById(project.getId())
+                    .orElseThrow(() -> new RuntimeException("Project not found"));
+
+            project1.setLanguage(project.getLanguage());
+            project1.setPatterns(project.getPatterns());
+            project1.setResponse(project.getResponse());
+            project1.setCp(project.getCp());
+            projectRepository.save(project1);
+        }catch (Exception e){
+            throw new Exception("Exception occurred");
+        }
     }
 
     public void getFiles(String projectPath) {
@@ -69,18 +91,20 @@ public class FileHandler {
     }
 
     private void calculateComplexity() {
-         fileList.forEach(file -> {
+        System.out.println("Found " + fileList.size() + " Files in source path");
+        fileList.forEach(file -> {
             ProjectFile projectFile = new ProjectFile();
             stack = new Stack();
 
             try (LineNumberReader lnr = new LineNumberReader(new FileReader(file))) {
 
-                 projectFile.setRelativePath(file.getCanonicalPath().replace(projectRoot, ""));
+                System.out.println("Analyzing file " + file.getCanonicalPath().replace(projectRoot, ""));
+                projectFile.setRelativePath(file.getCanonicalPath().replace(projectRoot, ""));
                 List<Line> lines = new ArrayList<>();
-                boolean singleLineCommented = false;
+                boolean singleLineCommented;
                 boolean multiLineCommented = false;
 
-                // Helper for Cs calculation
+                // helper for Cs calculation
                 List<String> methodsAndVariables = MethodAndVariableFinder.getMethodAndVariables(file);
                 HashMap<Integer, Integer> recursiveLineNumbers = RecursiveMethodLineNumberFinder.getRecursiveMethodLineNumbers(file);
 
@@ -89,36 +113,34 @@ public class FileHandler {
                     lineObj.setLineNo(lnr.getLineNumber());
                     lineObj.setData(line);
 
-                    // Handle single-line comments
-                    if (line.trim().startsWith("//")) {
+                    // ignore comment lines
+                    if (line.trim().startsWith("//") || line.trim().startsWith("import") || line.trim().startsWith("include")) {
                         singleLineCommented = true;
-                        lineObj.setSingleLineCommentsCount(lineObj.getSingleLineCommentsCount() + 1);
                     } else {
                         singleLineCommented = false;
                     }
-
-                    // Handle multi-line comments
                     if (line.trim().startsWith("/*")) {
                         multiLineCommented = true;
-                        lineObj.setMultiLineCommentsCount(lineObj.getMultiLineCommentsCount() + 1);
                     }
-                    if (line.trim().endsWith("*/")) {
+                    if (line.trim().startsWith("*/")) {
+                        line = line.replaceFirst("\\*/", "");
                         multiLineCommented = false;
-
                     }
-
-                    // Remove comment part from the line data for complexity calculations
                     if (line.contains("//")) {
-                        line = line.substring(0, line.indexOf("//"));
+                        line = line.replace(line.substring(line.indexOf("//")), "");
                     }
 
-                    // Calculate complexity if line is not commented
+                    //calculate complexity if line is not commented
                     if (!singleLineCommented && !multiLineCommented) {
                         Cs.calcCs(lineObj, line, methodsAndVariables);
                         Ci.calcCi(lineObj, line, project.getLanguage());
                         Ctc.calcCtc(lineObj, line);
                         Cnc.calcCnc(lineObj, line);
                         Cr.calcCr(lineObj, recursiveLineNumbers);
+                    }
+
+                    if (line.trim().endsWith("*/")) {
+                        multiLineCommented = false;
                     }
 
                     lines.add(lineObj);
@@ -138,11 +160,11 @@ public class FileHandler {
 
                 projectFiles.add(projectFile);
                 RecursiveMethodLineNumberFinder.resetData();
-                Ci.resetCi(); // Reset ci value after file ends
-                Ctc.setSwitchCtc(); // Add switch ctc value
+                Ci.resetCi(); //reset ci value after file ends
+                Ctc.setSwitchCtc(); //add switch ctc value
 
             } catch (IOException e) {
-                System.out.println(e.getMessage());
+                System.out.println("Error reading file"+ e);
             }
         });
     }

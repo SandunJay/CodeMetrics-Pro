@@ -26,7 +26,7 @@ public class MethodAndVariableFinder {
         List<String> list = new ArrayList<>();
         try (LineNumberReader lnr = new LineNumberReader(new FileReader(file))) {
             lnr.lines().parallel().forEach(line -> {
-
+                try {
                 // method finder
                 Matcher m = method.matcher(line);
                 while (m.find()) {
@@ -95,6 +95,10 @@ public class MethodAndVariableFinder {
                     }
                 }
 
+                } catch (Exception e) {
+                    System.out.println("Error processing line: " + line);
+                    e.printStackTrace();
+                }
             });
         } catch (IOException e) {
             }
