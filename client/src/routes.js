@@ -57,7 +57,7 @@ var routes = [
     name: "Notifications",
     rtlName: "إخطارات",
     icon: "tim-icons icon-bell-55",
-    component: <Notifications />,
+    component:  <Charts />,
     layout: "/admin",
   },
   {

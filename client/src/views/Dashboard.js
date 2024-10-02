@@ -76,7 +76,7 @@ const [chartData,setChartData]=useState();
   useEffect(() => {
     async function fetchData() {
       try {
-        const response = await fetch('http://localhost:8080/projects');
+        const response = await fetch('http://localhost:8090/projects');
         const data = await response.json();
 
         console.log(data[0]?.files[0]); // Log the first file for debugging
@@ -218,7 +218,7 @@ const [chartData,setChartData]=useState();
 
             <Card style={{padding: '20px', textAlign: 'center', fontSize: '1.5rem'}}>
               <h5 className="card-category"></h5>
-              <CardTitle tag="h2">Text Width</CardTitle>
+              <CardTitle tag="h2">Total Weight</CardTitle>
               <div style={{fontSize: '3rem', fontWeight: 'bold',color: 'white'}}>{totals.tw}</div>
             </Card>
 
@@ -250,7 +250,28 @@ const [chartData,setChartData]=useState();
             </Card>
 
           </Col>
-
+          <Col xs="4">
+          <Card style={{padding: '20px', textAlign: 'center', fontSize: '1.5rem'}}>
+              <h5 className="card-category"></h5>
+              <CardTitle tag="h2">Inheritance Complexity</CardTitle>
+              <div style={{fontSize: '3rem', fontWeight: 'bold',color: 'white'}}>0</div>
+            </Card>
+            </Col>
+            <Col xs="4">
+          <Card style={{padding: '20px', textAlign: 'center', fontSize: '1.5rem'}}>
+              <h5 className="card-category"></h5>
+              <CardTitle tag="h2">Encapsulation </CardTitle>
+              <div style={{fontSize: '3rem', fontWeight: 'bold',color: 'white'}}>Null</div>
+            </Card>
+            </Col>
+            <Col xs="4">
+          <Card style={{padding: '20px', textAlign: 'center', fontSize: '1.5rem'}}>
+              <h5 className="card-category"></h5>
+              <CardTitle tag="h2">PPMR </CardTitle>
+              <div style={{fontSize: '3rem', fontWeight: 'bold',color: 'white'}}>20%</div>
+            </Card>
+            </Col>
+            
         </Row>
         {/*<Row>*/}
         {/*  <Col lg="4">*/}
