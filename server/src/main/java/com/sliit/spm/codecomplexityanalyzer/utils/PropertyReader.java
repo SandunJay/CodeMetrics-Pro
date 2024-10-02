@@ -16,7 +16,7 @@ public class PropertyReader {
     private Map<String, String> properties = new HashMap<>();
 
     private PropertyReader() {
-        try (FileReader reader = new FileReader("config/application.properties")) {
+        try (FileReader reader = new FileReader("src/main/resources/application.properties")) {
             Properties p = new Properties();
             p.load(reader);
             p.entrySet().forEach(entry -> properties.put(entry.getKey().toString(), entry.getValue().toString()));

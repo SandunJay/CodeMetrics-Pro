@@ -1,39 +1,48 @@
 package com.sliit.spm.codecomplexityanalyzer.service.serviceimpl;
 
 import com.sliit.spm.codecomplexityanalyzer.model.Project;
-import com.sliit.spm.codecomplexityanalyzer.utils.LanguageDetector;
 import net.sourceforge.tess4j.ITesseract;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.io.IOException;
 
 @Service
 public class ImageScanner {
 
-    @Autowired
     private final LanguageDetector languageDetector;
 
+    @Autowired
     public ImageScanner(LanguageDetector languageDetector) {
         this.languageDetector = languageDetector;
     }
 
-    public String readImage(Project project) {
-        ITesseract image  = new Tesseract();
-        image.setDatapath("C:\\Program Files\\Tesseract-OCR\\tessdata");
-        image.setLanguage("eng");
-        String data = "";
+    public String readImage(Project project, MultipartFile file) throws IOException {
+        ITesseract tesseract = new Tesseract();
+        tesseract.setDatapath("C:\\Program Files\\Tesseract-OCR\\tessdata");
+        tesseract.setLanguage("eng");
+
+        File tempFile = File.createTempFile("image", ".png");
+        file.transferTo(tempFile);
+
+        String extractedText = "";
 
         try {
-            data = image.doOCR(new File(project.getSourcePath()));
-            project.setLanguage(languageDetector.detectLanguage(data));
+            extractedText = tesseract.doOCR(tempFile);
+            project.setLanguage(languageDetector.detectLanguage(extractedText));
             System.out.println(project.getLanguage());
-            System.out.println(data);
-        }catch (TesseractException e){
+            System.out.println(extractedText);
+        } catch (TesseractException e) {
             e.printStackTrace();
+        } finally {
+            tempFile.delete();
         }
-        return data;
+
+        return extractedText;
     }
 }
+
