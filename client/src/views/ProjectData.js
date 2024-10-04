@@ -73,7 +73,7 @@ const [chartData,setChartData]=useState();
     async function fetchProjectData() {
         setLoading(true); 
         try {
-            const response = await fetch(`http://localhost:8080/api/v1/project/${id}`);
+            const response = await fetch(`http://localhost:8090/api/v1/project/${id}`);
             const data = await response.json();
             setProject(data);
             setLoading(false);
@@ -169,7 +169,7 @@ const [chartData,setChartData]=useState();
 
   const handleTextSubmit = async () => {
     try {
-      const response = await fetch('http://localhost:8085/api/v1/detect/text', {
+      const response = await fetch('http://localhost:8090/api/v1/detect/text', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -204,7 +204,7 @@ const [chartData,setChartData]=useState();
 
     try {
       console.error('uploading file');
-      const response = await fetch('http://localhost:8080/api/v1/detect/zip', {
+      const response = await fetch('http://localhost:8090/api/v1/detect/zip', {
         method: 'POST',
         body: formData,
       });
@@ -236,7 +236,7 @@ const [chartData,setChartData]=useState();
 
     try {
       console.error('uploading file');
-      const response = await fetch('http://localhost:8085/api/v1/detect/file', {
+      const response = await fetch('http://localhost:8090/api/v1/detect/file', {
         method: 'POST',
         body: formData,
       });
