@@ -13,7 +13,7 @@ const ProjectTable = ({ refreshTable }) => {
 
   const fetchProjects = async () => {
     try {
-      const response = await axios.get(`http://localhost:8080/api/v1/project?page=${page}&limit=${projectsPerPage}`);
+      const response = await axios.get(`http://localhost:8085/api/v1/project?page=${page}&limit=${projectsPerPage}`);
       if (response.data.length === 0) setHasMoreData(false);
       else setProjects(response.data);
       setLoading(false);
@@ -37,7 +37,7 @@ const ProjectTable = ({ refreshTable }) => {
 
   const deleteProject = async (id) => {
     try {
-      const response = await axios.delete(`http://localhost:8080/api/v1/project/${id}`);
+      const response = await axios.delete(`http://localhost:8085/api/v1/project/${id}`);
       if (response.data.length === 0) setHasMoreData(false);
       else setProjects(response.data);
       setLoading(false);
