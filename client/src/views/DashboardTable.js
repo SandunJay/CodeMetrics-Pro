@@ -24,7 +24,7 @@ const DashboardTable = () => {
         setLoading(false);
         return;
       }
-      const response = await axios.post('http://localhost:8085/api/v1/project/create', {
+      const response = await axios.post('http://localhost:8090/api/v1/project/create', {
         name: projectName,
         email: email,
       });
