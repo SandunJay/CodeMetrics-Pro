@@ -197,7 +197,7 @@ const [chartData,setChartData]=useState();
 
     try {
       console.error('uploading file');
-      const response = await fetch('http://localhost:8085/api/v1/detect/zip', {
+      const response = await fetch('http://localhost:8090/api/v1/detect/zip', {
         method: 'POST',
         body: formData,
       });
@@ -223,7 +223,7 @@ const [chartData,setChartData]=useState();
 
     try {
       console.error('uploading file');
-      const response = await fetch('http://localhost:8085/api/v1/detect/file', {
+      const response = await fetch('http://localhost:8090/api/v1/detect/file', {
         method: 'POST',
         body: formData,
       });
