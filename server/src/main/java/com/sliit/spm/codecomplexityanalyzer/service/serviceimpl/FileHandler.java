@@ -65,6 +65,7 @@ public class FileHandler {
             project1.setPatterns(project.getPatterns());
             project1.setResponse(project.getResponse());
             project1.setCp(project.getCp());
+            project1.setFiles(project.getFiles());
             projectRepository.save(project1);
         }catch (Exception e){
             throw new Exception("Exception occurred");

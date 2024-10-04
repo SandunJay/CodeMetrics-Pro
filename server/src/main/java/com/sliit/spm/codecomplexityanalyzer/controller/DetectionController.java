@@ -19,13 +19,16 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/v1/detect")
 public class DetectionController {
@@ -46,18 +49,43 @@ public class DetectionController {
 
 //    Controller to pick Images as multipart files and process it
 @PostMapping("/image")
-public ResponseEntity<?> detectImages(@RequestParam("image") MultipartFile image) {
-    Project project = new Project();
-    project.setProjectKey("ACC");
+public ResponseEntity<?> detectImages(@RequestParam("image") MultipartFile image, @RequestParam("projectId") String projectId) {
     if (image.isEmpty()) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File cannot be null or empty.");
     }
+    if (projectId.isEmpty()) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("ProjectId cannot be null or empty.");
+    }
+    Project project = new Project();
+    project.setProjectKey("ACC");
+    project.setId(projectId);
     try {
         String text = imageScanner.readImage(project, image);
+        String detectedLanguage = languageDetector.detectLanguage(text);
+        project.setLanguage(detectedLanguage);
         Map<String, Boolean> patterns = detectionService.detectPatterns(text, project);
-        AiAnalysisResponse analysisResponse = groqApiService.analyzeCode(text);
-        project.setResponse(analysisResponse);
-        return ResponseEntity.ok(patterns);
+        Set<String> detectedPatterns = patterns.entrySet().stream()
+                .filter(Map.Entry::getValue)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+        project.setPatterns(detectedPatterns);
+//        AiAnalysisResponse analysisResponse = groqApiService.analyzeCode(text);
+//        project.setResponse(analysisResponse);
+
+//        return ResponseEntity.ok(Map.of(
+//                "detectedLanguage", project.getLanguage(),
+//                "patterns", patterns,
+//                "geminiOverview", project.getResponse().getOverview(),
+//                "completedCode", project.getResponse().getCompletedCode(),
+//                "improvedCode", project.getResponse().getImprovedCode()
+//        ));
+
+        project.setSourcePath(createTempFile(text));
+
+        fileHandlerService.readFiles(project);
+//        AiAnalysisResponse analysisResponse = groqApiService.analyzeCode(text);
+//        project.setResponse(analysisResponse);
+        return ResponseEntity.ok(project);
     } catch (IOException e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing image: " + e.getMessage());
     } catch (Exception e) {
@@ -65,15 +93,39 @@ public ResponseEntity<?> detectImages(@RequestParam("image") MultipartFile image
     }
 }
 
-    @PostMapping("/pdf")
-    public ResponseEntity<?> detectPdf(@RequestParam("pdf") MultipartFile pdf) throws Exception {
-        Project project = new Project();
-        project.setProjectKey("ACC");
+    private String createTempFile(String text) throws IOException {
+        File tempFile = null;
+        // Create a temporary file in the D drive and write the extracted text to it
+        Path tempDir = Paths.get("D:/tempPdfText");
+        if (!Files.exists(tempDir)) {
+            Files.createDirectories(tempDir); // Create the directory if it doesn't exist
+        }
 
+        // Generate a random number
+        int randomNumber = new Random().nextInt(1000); // adjust the range as needed
+
+        // Create a folder with the random number as its name
+        Path randomFolder = tempDir.resolve(String.valueOf(randomNumber));
+        Files.createDirectories(randomFolder);
+
+        tempFile = Files.createTempFile(randomFolder, "extractedText", ".java").toFile();
+        Files.write(tempFile.toPath(), text.getBytes(StandardCharsets.UTF_8));
+
+        // Set the file path in the project
+        return randomFolder.toString();
+    }
+
+    @PostMapping("/pdf")
+    public ResponseEntity<?> detectPdf(@RequestParam("pdf") MultipartFile pdf, @RequestParam("projectId") String projectId) throws Exception {
         if (pdf.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File cannot be null or empty.");
         }
-
+        if (projectId.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("ProjectId cannot be null or empty.");
+        }
+        Project project = new Project();
+        project.setId(projectId);
+        project.setProjectKey("ACC");
         try {
             String codeText = extractTextFromPdf(pdf);
             String detectedLanguage = languageDetector.detectLanguage(codeText);
@@ -84,17 +136,22 @@ public ResponseEntity<?> detectImages(@RequestParam("image") MultipartFile image
                     .map(Map.Entry::getKey)
                     .collect(Collectors.toSet());
             project.setPatterns(detectedPatterns);
-            AiAnalysisResponse analysisResponse = groqApiService.analyzeCode(codeText);
-            project.setResponse(analysisResponse);
 
-            return ResponseEntity.ok(Map.of(
-                    "detectedLanguage", detectedLanguage,
-                    "patterns", patterns,
-                    "geminiOverview", project.getResponse().getOverview(),
-                    "completedCode", project.getResponse().getCompletedCode(),
-                    "improvedCode", project.getResponse().getImprovedCode()
-            ));
+//            project.setSourcePath(destDir.getAbsolutePath());
 
+//            return ResponseEntity.ok(Map.of(
+//                    "detectedLanguage", detectedLanguage,
+//                    "patterns", patterns,
+//                    "geminiOverview", project.getResponse().getOverview(),
+//                    "completedCode", project.getResponse().getCompletedCode(),
+//                    "improvedCode", project.getResponse().getImprovedCode()
+//            ));
+
+            project.setSourcePath(createTempFile(codeText));
+            fileHandlerService.readFiles(project);
+//            AiAnalysisResponse analysisResponse = groqApiService.analyzeCode(codeText);
+//            project.setResponse(analysisResponse);
+            return ResponseEntity.ok(project);
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing PDF: " + e.getMessage());
         } catch (Exception e) {
@@ -112,12 +169,15 @@ public ResponseEntity<?> detectImages(@RequestParam("image") MultipartFile image
 
     @PostMapping("/zip")
     public ResponseEntity<?> analyze(@RequestParam("zipFile") MultipartFile zipFile, @RequestParam("projectId") String projectId) {
-        Project project = new Project();
-        project.setId(projectId);
-        project.setProjectKey("ACC");
         if (zipFile.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File cannot be null or empty.");
         }
+        if (projectId.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("ProjectId cannot be null or empty.");
+        }
+        Project project = new Project();
+        project.setId(projectId);
+        project.setProjectKey("ACC");
         File destDir = new File("D:/unzipped");
         if (!destDir.exists()) {
             destDir.mkdirs(); // Create the directory if it doesn't exist
@@ -138,7 +198,8 @@ public ResponseEntity<?> detectImages(@RequestParam("image") MultipartFile image
             }
 
             fileHandlerService.readFiles(project);
-            return ResponseEntity.ok(project.getPatterns());
+
+            return ResponseEntity.ok(project);
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing zip file: " + e.getMessage());
         } catch (Exception e) {
