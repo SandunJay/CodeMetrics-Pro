@@ -541,3 +541,17 @@ Created using IcoMoon - icomoon.io
 .icon-components::before {
   content: "\ea65";
 }
+
+.table-no-scroll {
+  overflow: hidden; /* Hide overflow */
+}
+
+/* To specifically hide scrollbar while still allowing scrolling if needed */
+.table-no-scroll::-webkit-scrollbar {
+  display: none; /* Hide scrollbar for Chrome, Safari and Opera */
+}
+
+.table-no-scroll {
+  -ms-overflow-style: none; /* Hide scrollbar for Internet Explorer and Edge */
+  scrollbar-width: none; /* Hide scrollbar for Firefox */
+}
