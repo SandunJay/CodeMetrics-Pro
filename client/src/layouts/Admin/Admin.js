@@ -1,20 +1,3 @@
-/*!
-
-=========================================================
-* Black Dashboard React v1.2.2
-=========================================================
-
-* Product Page: https://www.creative-tim.com/product/black-dashboard-react
-* Copyright 2023 Creative Tim (https://www.creative-tim.com)
-* Licensed under MIT (https://github.com/creativetimofficial/black-dashboard-react/blob/master/LICENSE.md)
-
-* Coded by Creative Tim
-
-=========================================================
-
-* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-*/
 import React from "react";
 import { Route, Routes, Navigate, useLocation } from "react-router-dom";
 // javascript plugin used to create scrollbars on windows
@@ -30,6 +13,7 @@ import routes from "routes.js";
 
 import logo from "assets/img/react-logo.png";
 import { BackgroundColorContext } from "contexts/BackgroundColorContext";
+import ProjectData from "views/ProjectData";
 
 var ps;
 
@@ -80,7 +64,7 @@ function Admin(props) {
   };
   const getRoutes = (routes) => {
     return routes.map((prop, key) => {
-      if (prop.layout === "/admin") {
+      if (prop.layout === "/admin" ) {
         return (
           <Route path={prop.path} element={prop.component} key={key} exact />
         );
@@ -118,7 +102,8 @@ function Admin(props) {
                 sidebarOpened={sidebarOpened}
               />
               <Routes>
-                {getRoutes(routes)}
+              {/* <Route path="/project/:id" element={<ProjectData />} /> */}
+              {getRoutes(routes)}
                 <Route
                   path="/"
                   element={<Navigate to="/admin/dashboard" replace />}

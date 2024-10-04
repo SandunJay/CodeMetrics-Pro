@@ -41,6 +41,8 @@ import {
   NavbarToggler,
   ModalHeader,
 } from "reactstrap";
+import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
 
 function AdminNavbar(props) {
   const [collapseOpen, setcollapseOpen] = React.useState(false);
@@ -74,6 +76,14 @@ function AdminNavbar(props) {
   const toggleModalSearch = () => {
     setmodalSearch(!modalSearch);
   };
+
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    Cookies.remove("email");
+    navigate("/login");
+  };
+
   return (
     <>
       <Navbar className={classNames("navbar-absolute", color)} expand="lg">
@@ -101,10 +111,9 @@ function AdminNavbar(props) {
           </NavbarToggler>
           <Collapse navbar isOpen={collapseOpen}>
             <Nav className="ml-auto" navbar>
-              <Button color="link" onClick={toggleModalSearch} className="ml-4">
-               {/* Increase margin-right */}
+              {/* <Button color="link" onClick={toggleModalSearch} className="ml-4">
                <p className="mr-5">Login</p>
-              </Button>
+              </Button> */}
 
 
               <InputGroup className="search-bar">
@@ -175,7 +184,7 @@ function AdminNavbar(props) {
                   </NavLink>
                   <DropdownItem divider tag="li" />
                   <NavLink tag="li">
-                    <DropdownItem className="nav-item">Log out</DropdownItem>
+                    <DropdownItem className="nav-item" onClick={handleLogout}>Log out</DropdownItem>
                   </NavLink>
                 </DropdownMenu>
               </UncontrolledDropdown>

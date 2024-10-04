@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.sliit.spm.codecomplexityanalyzer.model.Project;
 
+import java.util.List;
+
 @CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/v1/project")
@@ -51,6 +53,12 @@ public class ProjectController {
     public ResponseEntity<Project> createProject(@RequestBody ProjectDto projectDto) {
         Project createdProject = projectService.createProject(projectDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdProject);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Project>> getAllProjects() {
+        List<Project> projects = projectService.getAllProjects();
+        return ResponseEntity.ok(projects);
     }
 
     // Update project with analysis (after zip or pdf processing)

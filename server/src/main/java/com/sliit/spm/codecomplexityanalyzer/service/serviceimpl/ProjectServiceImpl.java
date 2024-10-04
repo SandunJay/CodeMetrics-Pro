@@ -9,6 +9,8 @@ import com.sliit.spm.codecomplexityanalyzer.model.Project;
 import com.sliit.spm.codecomplexityanalyzer.repository.ProjectRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class ProjectServiceImpl {
 ////    private final ProjectRepo projectRepo;
@@ -70,6 +72,11 @@ public class ProjectServiceImpl {
 //        project.setProjectKey(projectDto.getProjectKey());
 
         return projectRepository.save(project);
+    }
+
+    public List<Project> getAllProjects() {
+        // Fetch all projects from the repository
+        return projectRepository.findAll();
     }
 
     // Update project with analyzed data

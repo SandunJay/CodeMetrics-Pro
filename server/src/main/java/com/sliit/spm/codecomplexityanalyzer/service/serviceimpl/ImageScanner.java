@@ -14,12 +14,12 @@ import java.io.IOException;
 @Service
 public class ImageScanner {
 
-    private final LanguageDetector languageDetector;
+//    private final LanguageDetector languageDetector;
 
-    @Autowired
-    public ImageScanner(LanguageDetector languageDetector) {
-        this.languageDetector = languageDetector;
-    }
+//    @Autowired
+//    public ImageScanner(LanguageDetector languageDetector) {
+//        this.languageDetector = languageDetector;
+//    }
 
     public String readImage(Project project, MultipartFile file) throws IOException {
         ITesseract tesseract = new Tesseract();
@@ -33,7 +33,7 @@ public class ImageScanner {
 
         try {
             extractedText = tesseract.doOCR(tempFile);
-            project.setLanguage(languageDetector.detectLanguage(extractedText));
+//            project.setLanguage(languageDetector.detectLanguage(extractedText));
             System.out.println(project.getLanguage());
             System.out.println(extractedText);
         } catch (TesseractException e) {
