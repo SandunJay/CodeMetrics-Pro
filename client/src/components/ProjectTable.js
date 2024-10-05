@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table, Button, Row, Col, Pagination, PaginationItem, PaginationLink } from 'reactstrap';
 import axios from 'axios';
+import Cookies from 'js-cookie';
 
 const ProjectTable = ({ refreshTable }) => {
   const [projects, setProjects] = useState([]);
@@ -12,8 +13,9 @@ const ProjectTable = ({ refreshTable }) => {
   const navigate = useNavigate();
 
   const fetchProjects = async () => {
+    const email = Cookies.get('email');     
     try {
-      const response = await axios.get(`http://localhost:8090/api/v1/project?page=${page}&limit=${projectsPerPage}`);
+      const response = await axios.get(`http://localhost:8090/api/v1/project?userId=${email}&page=${page}&limit=${projectsPerPage}`);
       if (response.data.length === 0) setHasMoreData(false);
       else setProjects(response.data);
       setLoading(false);

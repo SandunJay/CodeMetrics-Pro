@@ -74,9 +74,11 @@ public class ProjectServiceImpl {
         return projectRepository.save(project);
     }
 
-    public List<Project> getAllProjects() {
-        // Fetch all projects from the repository
-        return projectRepository.findAll();
+    public List<Project> getAllProjects(String userId) {
+        User user = userRepository.findByEmail(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return projectRepository.findByUser(user.getId());
     }
 
     // Update project with analyzed data

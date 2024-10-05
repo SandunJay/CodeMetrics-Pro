@@ -56,8 +56,8 @@ public class ProjectController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Project>> getAllProjects() {
-        List<Project> projects = projectService.getAllProjects();
+    public ResponseEntity<List<Project>> getAllProjects(@RequestParam String userId) {
+        List<Project> projects = projectService.getAllProjects(userId);
         return ResponseEntity.ok(projects);
     }
 
