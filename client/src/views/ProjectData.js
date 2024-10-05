@@ -109,8 +109,6 @@ const [chartData,setChartData]=useState();
           if (line.cs >= 1) {
             totalCps += line.cps;
             totalCs += line.cs;
-
-
             totalCi += line.ci || 0;
             totalCnc += line.cnc || 0;
           totalCps += line.cps || 0;
@@ -155,7 +153,7 @@ const [chartData,setChartData]=useState();
     return chartFunction ? chartFunction(canvas, lineCounts) : {};
   };
 
-  const toggleModal = () => setIsOpen(!isOpen);
+  const toggleModal = () => setIsOpen(!isOpen) && setSelectedFile==null;
 
   const handleFilePicker = (event) => {
     const selectedFiles = Array.from(event.target.files);
@@ -166,24 +164,40 @@ const [chartData,setChartData]=useState();
     }
   };
 
+
   const handleTextSubmit = async () => {
+    const projectId = id; 
+  
     try {
-      const response = await fetch('http://localhost:8090/api/v1/detect/text', {
+      const response = await fetch(`http://localhost:8090/api/v1/detect/text?projectId=${projectId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ code: text }),
+        body: JSON.stringify(text),
       });
-
-      toggleModal(); 
-      handleToast(response.ok ? 'success' : 'fail');
+  
+      if (response.ok) {
+        setIsZipUpload(true); 
+        const data = await response.json();  
+        setProject(data); 
+        handleToast('success');  
+      } else {
+        setProject(null); 
+        console.error('Error submitting text:', response.statusText);
+        handleToast('fail');  
+      }
+      
+      toggleModal();  
     } catch (error) {
-      toggleModal(); 
-      handleToast('fail');
+      setProject(null);  
+      console.error('Error submitting text:', error);
+      toggleModal();  
+      handleToast('fail');  
     }
   };
-
+  
+  
   const handleZipAndUpload = async () => {
     const zip = new JSZip();
     files.forEach((file) => {
@@ -238,20 +252,97 @@ const [chartData,setChartData]=useState();
         method: 'POST',
         body: formData,
       });
-      // if (response.ok) {
-      //   console.log('File uploaded successfully');
-      // } else {
-      //   console.error('Error uploading file:', response.statusText);
-      // }
-      toggleModal(); // Close the modal upon success
+      if (response.ok) {
+        console.log('File uploaded successfully');
+      } else {
+        console.error('Error uploading file:', response.statusText);
+      }
+      toggleModal();
       handleToast(response.ok ? 'success' : 'fail');
     } catch (error) {
-      // console.error('Error uploading file:', error);
-      toggleModal(); // Close the modal even if there's an error
+      toggleModal();
       handleToast('fail');
     }
   };
 
+  const handleImageUpload = async () => {
+    if (!selectedFile) {
+      console.error('No file selected');
+      return;
+    }
+  
+    const formData = new FormData();
+    formData.append('image', selectedFile);  
+    formData.append('projectId', id);  
+  
+    setLoading(true); 
+  
+    try {
+      const response = await fetch('http://localhost:8090/api/v1/detect/image', {
+        method: 'POST',
+        body: formData,
+      });
+  
+      setLoading(false);
+      if (response.ok) {
+        const data = await response.json();
+        setProject(data);  // Populate the project state
+        handleToast('success');
+      } else {
+        setProject(null); 
+        console.error('Error uploading image:', response.statusText);
+        handleToast('fail');
+      }
+  
+      toggleModal(); 
+    } catch (error) {
+      setLoading(false);
+      setProject(null); 
+      console.error('Error uploading image:', error);
+      toggleModal();
+      handleToast('fail');
+    }
+  };
+  
+  const handlePdfUpload = async () => {
+    if (!selectedFile) {
+      console.error('No file selected');
+      return;
+    }
+  
+    const formData = new FormData();
+    formData.append('pdf', selectedFile);  // Attach the PDF file
+    formData.append('projectId', id);  // Attach projectId
+  
+    setLoading(true); 
+  
+    try {
+      const response = await fetch('http://localhost:8090/api/v1/detect/pdf', {
+        method: 'POST',
+        body: formData,
+      });
+  
+      setLoading(false);
+      if (response.ok) {
+        const data = await response.json();
+        setProject(data);  // Populate the project state
+        handleToast('success');
+      } else {
+        setProject(null); 
+        console.error('Error uploading PDF:', response.statusText);
+        handleToast('fail');
+      }
+  
+      toggleModal(); 
+    } catch (error) {
+      setLoading(false);
+      setProject(null); 
+      console.error('Error uploading PDF:', error);
+      toggleModal();
+      handleToast('fail');
+    }
+  };
+  
 
   const handleToast = (status) => {
     if (status === 'success') {
@@ -287,8 +378,10 @@ const [chartData,setChartData]=useState();
               <ModalBody>
                 {/* Options to select */}
                 <div>
-                  <Button color={option === 'add' ? 'primary' : 'secondary'} onClick={() => setOption('add')}>Add</Button>
-                  <Button color={option === 'file' ? 'primary' : 'secondary'} onClick={() => setOption('file')}>Pick File</Button>
+                  <Button color={option === 'add' ? 'primary' : 'secondary'} onClick={() => setOption('add')}>Add Text</Button>
+                  {/* <Button color={option === 'file' ? 'primary' : 'secondary'} onClick={() => setOption('file')}>Pick File</Button> */}
+                  <Button color={option === 'image' ? 'primary' : 'secondary'} onClick={() => setOption('image')}>Upload Image</Button>
+                  <Button color={option === 'pdf' ? 'primary' : 'secondary'} onClick={() => setOption('pdf')}>Upload PDF</Button>
                   <Button color={option === 'directory' ? 'primary' : 'secondary'} onClick={() => setOption('directory')}>Pick Directory</Button>
                 </div>
                 <hr />
@@ -302,10 +395,24 @@ const [chartData,setChartData]=useState();
                     style={{ color: 'black', backgroundColor: 'white' }}
                   />
                 )}
-                {option === 'file' && (
+                {/* {option === 'file' && (
                   <div>
                     <input type="file" onChange={handleFilePicker} />
                     {selectedFile && <p>Selected File: {selectedFile.name}</p>}
+                  </div>
+                )} */}
+
+                {option === 'image' && (
+                  <div>
+                    <input type="file" accept="image/*" onChange={handleFilePicker} />
+                    {selectedFile && <p>Selected Image: {selectedFile.name}</p>}
+                  </div>
+                )}
+
+                {option === 'pdf' && (
+                  <div>
+                    <input type="file" accept="application/pdf" onChange={handleFilePicker} />
+                    {selectedFile && <p>Selected PDF: {selectedFile.name}</p>}
                   </div>
                 )}
                 {option === 'directory' && (
@@ -327,10 +434,22 @@ const [chartData,setChartData]=useState();
                         </Button>
                     )}
 
-                    {option === 'file' && (
+                    {/* {option === 'file' && (
                         <Button color="primary" onClick={handleFileUpload} className="p-2 ml-3 mb-2">
                         Upload File
                         </Button>
+                    )} */}
+
+                    {option === 'image' && (
+                      <Button color="primary" onClick={handleImageUpload} className="p-2 ml-3 mb-2">
+                        Upload Image
+                      </Button>
+                    )}
+
+                    {option === 'pdf' && (
+                      <Button color="primary" onClick={handlePdfUpload} className="p-2 ml-3 mb-2">
+                        Upload PDF
+                      </Button>
                     )}
 
                     {option === 'directory' && (

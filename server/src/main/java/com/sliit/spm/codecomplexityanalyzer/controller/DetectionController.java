@@ -2,6 +2,7 @@ package com.sliit.spm.codecomplexityanalyzer.controller;
 
 import com.sliit.spm.codecomplexityanalyzer.model.AiAnalysisResponse;
 import com.sliit.spm.codecomplexityanalyzer.model.Project;
+import com.sliit.spm.codecomplexityanalyzer.repository.ProjectRepository;
 import com.sliit.spm.codecomplexityanalyzer.service.serviceimpl.DesignPatternDetectionService;
 import com.sliit.spm.codecomplexityanalyzer.service.serviceimpl.FileHandler;
 //import com.sliit.spm.codecomplexityanalyzer.service.serviceimpl.GeminiApiService;
@@ -16,9 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,6 +39,8 @@ public class DetectionController {
     private DesignPatternDetectionService detectionService;
     @Autowired
     private GroqApiService groqApiService;
+    @Autowired
+    private ProjectRepository projectRepository;
 
     public DetectionController(ImageScanner imageScanner, FileHandler fileHandlerService
     ) {
@@ -48,17 +49,64 @@ public class DetectionController {
     }
 
 //    Controller to pick Images as multipart files and process it
+//@PostMapping("/image")
+//public ResponseEntity<?> detectImages(@RequestParam("image") MultipartFile image, @RequestParam("projectId") String projectId) throws Exception {
+//    if (image.isEmpty()) {
+//        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File cannot be null or empty.");
+//    }
+//    if (projectId.isEmpty()) {
+//        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("ProjectId cannot be null or empty.");
+//    }
+//    Project project1 = projectRepository.findById(projectId)
+//            .orElseThrow(() -> new RuntimeException("Project not found"));
+//
+//    if (project1.getCp() != 0) {
+//        throw new Exception("Project already has data");
+//    }
+//    Project project = new Project();
+//    project.setProjectKey("ACC");
+//    project.setId(projectId);
+//    try {
+//        String text = imageScanner.readImage(project, image);
+//        String detectedLanguage = languageDetector.detectLanguage(text);
+//        project.setLanguage(detectedLanguage);
+//        Map<String, Boolean> patterns = detectionService.detectPatterns(text, project);
+//        Set<String> detectedPatterns = patterns.entrySet().stream()
+//                .filter(Map.Entry::getValue)
+//                .map(Map.Entry::getKey)
+//                .collect(Collectors.toSet());
+//        project.setPatterns(detectedPatterns);
+//        project.setSourcePath(createTempFile(text));
+//        fileHandlerService.readFiles(project);
+////        AiAnalysisResponse analysisResponse = groqApiService.analyzeCode(text);
+////        project.setResponse(analysisResponse);
+//        return ResponseEntity.ok(project);
+//    } catch (IOException e) {
+//        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing image: " + e.getMessage());
+//    } catch (Exception e) {
+//        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error extracting text: " + e.getMessage());
+//    }
+//}
+
 @PostMapping("/image")
-public ResponseEntity<?> detectImages(@RequestParam("image") MultipartFile image, @RequestParam("projectId") String projectId) {
+public ResponseEntity<?> detectImages(@RequestParam("image") MultipartFile image, @RequestParam("projectId") String projectId) throws Exception {
     if (image.isEmpty()) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File cannot be null or empty.");
     }
     if (projectId.isEmpty()) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("ProjectId cannot be null or empty.");
     }
+    Project project1 = projectRepository.findById(projectId)
+            .orElseThrow(() -> new RuntimeException("Project not found"));
+
+    if (project1.getCp() != 0) {
+        throw new Exception("Project already has data");
+    }
     Project project = new Project();
     project.setProjectKey("ACC");
     project.setId(projectId);
+
+    String tempFolderPath = null; // Store temp folder path
     try {
         String text = imageScanner.readImage(project, image);
         String detectedLanguage = languageDetector.detectLanguage(text);
@@ -69,51 +117,75 @@ public ResponseEntity<?> detectImages(@RequestParam("image") MultipartFile image
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
         project.setPatterns(detectedPatterns);
-//        AiAnalysisResponse analysisResponse = groqApiService.analyzeCode(text);
-//        project.setResponse(analysisResponse);
-
-//        return ResponseEntity.ok(Map.of(
-//                "detectedLanguage", project.getLanguage(),
-//                "patterns", patterns,
-//                "geminiOverview", project.getResponse().getOverview(),
-//                "completedCode", project.getResponse().getCompletedCode(),
-//                "improvedCode", project.getResponse().getImprovedCode()
-//        ));
-
-        project.setSourcePath(createTempFile(text));
-
+        tempFolderPath = createTempFile(text); // Get temp folder path
+        project.setSourcePath(tempFolderPath);
         fileHandlerService.readFiles(project);
-//        AiAnalysisResponse analysisResponse = groqApiService.analyzeCode(text);
-//        project.setResponse(analysisResponse);
+
         return ResponseEntity.ok(project);
     } catch (IOException e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing image: " + e.getMessage());
     } catch (Exception e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error extracting text: " + e.getMessage());
+    } finally {
+        if (tempFolderPath != null) {
+            deleteDirectory(new File(tempFolderPath)); // Delete temp folder after processing
+        }
     }
 }
 
     private String createTempFile(String text) throws IOException {
         File tempFile = null;
-        // Create a temporary file in the D drive and write the extracted text to it
         Path tempDir = Paths.get("D:/tempPdfText");
         if (!Files.exists(tempDir)) {
-            Files.createDirectories(tempDir); // Create the directory if it doesn't exist
+            Files.createDirectories(tempDir);
         }
 
-        // Generate a random number
-        int randomNumber = new Random().nextInt(1000); // adjust the range as needed
-
-        // Create a folder with the random number as its name
+        int randomNumber = new Random().nextInt(1000);
         Path randomFolder = tempDir.resolve(String.valueOf(randomNumber));
         Files.createDirectories(randomFolder);
-
         tempFile = Files.createTempFile(randomFolder, "extractedText", ".java").toFile();
         Files.write(tempFile.toPath(), text.getBytes(StandardCharsets.UTF_8));
-
-        // Set the file path in the project
         return randomFolder.toString();
     }
+
+//    @PostMapping("/pdf")
+//    public ResponseEntity<?> detectPdf(@RequestParam("pdf") MultipartFile pdf, @RequestParam("projectId") String projectId) throws Exception {
+//        if (pdf.isEmpty()) {
+//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File cannot be null or empty.");
+//        }
+//        if (projectId.isEmpty()) {
+//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("ProjectId cannot be null or empty.");
+//        }
+//        Project project1 = projectRepository.findById(projectId)
+//                .orElseThrow(() -> new RuntimeException("Project not found"));
+//
+//        if (project1.getCp() != 0) {
+//            throw new Exception("Project already has data");
+//        }
+//        Project project = new Project();
+//        project.setId(projectId);
+//        project.setProjectKey("ACC");
+//        try {
+//            String codeText = extractTextFromPdf(pdf);
+//            String detectedLanguage = languageDetector.detectLanguage(codeText);
+//            project.setLanguage(detectedLanguage);
+//            Map<String, Boolean> patterns = detectionService.detectPatterns(codeText, project);
+//            Set<String> detectedPatterns = patterns.entrySet().stream()
+//                    .filter(Map.Entry::getValue)
+//                    .map(Map.Entry::getKey)
+//                    .collect(Collectors.toSet());
+//            project.setPatterns(detectedPatterns);
+//            project.setSourcePath(createTempFile(codeText));
+//            fileHandlerService.readFiles(project);
+////            AiAnalysisResponse analysisResponse = groqApiService.analyzeCode(codeText);
+////            project.setResponse(analysisResponse);
+//            return ResponseEntity.ok(project);
+//        } catch (IOException e) {
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing PDF: " + e.getMessage());
+//        } catch (Exception e) {
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error during analysis: " + e.getMessage());
+//        }
+//    }
 
     @PostMapping("/pdf")
     public ResponseEntity<?> detectPdf(@RequestParam("pdf") MultipartFile pdf, @RequestParam("projectId") String projectId) throws Exception {
@@ -123,9 +195,17 @@ public ResponseEntity<?> detectImages(@RequestParam("image") MultipartFile image
         if (projectId.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("ProjectId cannot be null or empty.");
         }
+        Project project1 = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        if (project1.getCp() != 0) {
+            throw new Exception("Project already has data");
+        }
         Project project = new Project();
         project.setId(projectId);
         project.setProjectKey("ACC");
+
+        String tempFolderPath = null; // Store temp folder path
         try {
             String codeText = extractTextFromPdf(pdf);
             String detectedLanguage = languageDetector.detectLanguage(codeText);
@@ -136,28 +216,22 @@ public ResponseEntity<?> detectImages(@RequestParam("image") MultipartFile image
                     .map(Map.Entry::getKey)
                     .collect(Collectors.toSet());
             project.setPatterns(detectedPatterns);
-
-//            project.setSourcePath(destDir.getAbsolutePath());
-
-//            return ResponseEntity.ok(Map.of(
-//                    "detectedLanguage", detectedLanguage,
-//                    "patterns", patterns,
-//                    "geminiOverview", project.getResponse().getOverview(),
-//                    "completedCode", project.getResponse().getCompletedCode(),
-//                    "improvedCode", project.getResponse().getImprovedCode()
-//            ));
-
-            project.setSourcePath(createTempFile(codeText));
+            tempFolderPath = createTempFile(codeText); // Get temp folder path
+            project.setSourcePath(tempFolderPath);
             fileHandlerService.readFiles(project);
-//            AiAnalysisResponse analysisResponse = groqApiService.analyzeCode(codeText);
-//            project.setResponse(analysisResponse);
+
             return ResponseEntity.ok(project);
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing PDF: " + e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error during analysis: " + e.getMessage());
+        } finally {
+            if (tempFolderPath != null) {
+                deleteDirectory(new File(tempFolderPath)); // Delete temp folder after processing
+            }
         }
     }
+
 
     private String extractTextFromPdf(MultipartFile pdfFile) throws IOException {
         PDDocument document = PDDocument.load(pdfFile.getInputStream());
@@ -167,25 +241,139 @@ public ResponseEntity<?> detectImages(@RequestParam("image") MultipartFile image
         return text;
     }
 
+//    @PostMapping("/text")
+//    public ResponseEntity<?> detectText(@RequestBody String text, @RequestParam("projectId") String projectId) throws Exception {
+//        if (text.isEmpty()) {
+//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Input text cannot be null or empty.");
+//        }
+//        if (projectId.isEmpty()) {
+//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("ProjectId cannot be null or empty.");
+//        }
+//         Project project1 = projectRepository.findById(projectId)
+//                .orElseThrow(() -> new RuntimeException("Project not found"));
+//
+//        System.out.println(project1);
+//        if (project1.getCp() != 0) {
+//            throw new Exception("Project already has data");
+//        }
+//
+//        Project project = new Project();
+//        project.setId(projectId);
+//        project.setProjectKey("ACC");
+//        try {
+//            String detectedLanguage = languageDetector.detectLanguage(text);
+//            project.setLanguage(detectedLanguage);
+//            Map<String, Boolean> patterns = detectionService.detectPatterns(text, project);
+//            Set<String> detectedPatterns = patterns.entrySet().stream()
+//                    .filter(Map.Entry::getValue)
+//                    .map(Map.Entry::getKey)
+//                    .collect(Collectors.toSet());
+//            project.setPatterns(detectedPatterns);
+//            project.setSourcePath(createTempTextFile(text));
+//            fileHandlerService.readFiles(project);
+////            AiAnalysisResponse analysisResponse = groqApiService.analyzeCode(codeText);
+////            project.setResponse(analysisResponse);
+//            return ResponseEntity.ok(project);
+//        } catch (IOException e) {
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing PDF: " + e.getMessage());
+//        } catch (Exception e) {
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error during analysis: " + e.getMessage());
+//        }
+//    }
+
+    @PostMapping("/text")
+    public ResponseEntity<?> detectText(@RequestBody String text, @RequestParam("projectId") String projectId) throws Exception {
+        if (text.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Input text cannot be null or empty.");
+        }
+        if (projectId.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("ProjectId cannot be null or empty.");
+        }
+        Project project1 = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        if (project1.getCp() != 0) {
+            throw new Exception("Project already has data");
+        }
+
+        Project project = new Project();
+        project.setId(projectId);
+        project.setProjectKey("ACC");
+
+        String tempFolderPath = null;
+        try {
+            String detectedLanguage = languageDetector.detectLanguage(text);
+            project.setLanguage(detectedLanguage);
+            Map<String, Boolean> patterns = detectionService.detectPatterns(text, project);
+            Set<String> detectedPatterns = patterns.entrySet().stream()
+                    .filter(Map.Entry::getValue)
+                    .map(Map.Entry::getKey)
+                    .collect(Collectors.toSet());
+            project.setPatterns(detectedPatterns);
+            tempFolderPath = createTempTextFile(text);
+            project.setSourcePath(tempFolderPath);
+            fileHandlerService.readFiles(project);
+
+            return ResponseEntity.ok(project);
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing text: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error during analysis: " + e.getMessage());
+        } finally {
+            if (tempFolderPath != null) {
+                deleteDirectory(new File(tempFolderPath));
+            }
+        }
+    }
+
+
+    private String createTempTextFile(String text) throws IOException {
+        Path tempDir = Paths.get("D:/tempPdfText");
+        if (!Files.exists(tempDir)) {
+            Files.createDirectories(tempDir); // Create the directory if it doesn't exist
+        }
+
+        // Generate a random folder inside tempDir to store the file
+        int randomNumber = new Random().nextInt(1000);
+        Path randomFolder = tempDir.resolve(String.valueOf(randomNumber));
+        Files.createDirectories(randomFolder);
+
+        // Create a temporary file inside the random folder
+        File tempFile = Files.createTempFile(randomFolder, "extractedText", ".java").toFile();
+
+        // Replace escaped newlines with actual newlines
+        String formattedText = text.replace("\\n", "\n");
+
+        // Write the text to the file, preserving the newline characters
+        Files.write(tempFile.toPath(), formattedText.getBytes(StandardCharsets.UTF_8));
+
+        // Return the path of the folder where the file was saved
+        return randomFolder.toString();
+    }
+
     @PostMapping("/zip")
-    public ResponseEntity<?> analyze(@RequestParam("zipFile") MultipartFile zipFile, @RequestParam("projectId") String projectId) {
+    public ResponseEntity<?> analyze(@RequestParam("zipFile") MultipartFile zipFile, @RequestParam("projectId") String projectId) throws Exception {
         if (zipFile.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File cannot be null or empty.");
         }
         if (projectId.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("ProjectId cannot be null or empty.");
         }
+        Project project1 = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        if (project1.getCp() != 0) {
+            throw new Exception("Project already has data");
+        }
         Project project = new Project();
         project.setId(projectId);
         project.setProjectKey("ACC");
         File destDir = new File("D:/unzipped");
         if (!destDir.exists()) {
-            destDir.mkdirs(); // Create the directory if it doesn't exist
+            destDir.mkdirs();
         }
 
-//        File tempDir = null;
         try {
-//            tempDir = Files.createTempDirectory("unzipped").toFile();
             unzipFile(zipFile, destDir);
             project.setSourcePath(destDir.getAbsolutePath());
             languageDetector.analyzeProjects(project);
@@ -261,33 +449,5 @@ public ResponseEntity<?> detectImages(@RequestParam("image") MultipartFile image
         }
         directory.delete();
     }
-
-    //    @GetMapping("/analyze")
-//    public ResponseEntity<List<Project>> analyzeProjects(@RequestParam String folderPath) {
-//        List<Project> projectInfoList = languageDetector.analyzeProjects(folderPath);
-//        if (projectInfoList.isEmpty()) {
-//            return ResponseEntity.noContent().build();
-//        }
-//        return ResponseEntity.ok(projectInfoList);
-//    }
-
-//    To get the code from an image in local storage
-//    @GetMapping("/extract")
-//    public ResponseEntity<String> extractText(@RequestParam String filePath) {
-//        Project project = new Project();
-//        if (filePath.isEmpty()){
-//            throw new  NullPointerException("File Path cannot be null");
-//        }
-//        try {
-//            String decodedPath = URLDecoder.decode(filePath, "UTF-8");
-//            project.setSourcePath(decodedPath);
-//            String text = imageScanner.readImage(project);
-//            return ResponseEntity.ok(text);
-//        } catch (UnsupportedEncodingException e) {
-//            return ResponseEntity.status(500).body("Error decoding file path: " + e.getMessage());
-//        } catch (Exception e) {
-//            return ResponseEntity.status(500).body("Error extracting text: " + e.getMessage());
-//        }
-//    }
 
 }
